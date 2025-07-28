@@ -5,14 +5,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Plus, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
 import { useToast } from "@/hooks/use-toast"
 
-export default function EquipmentAdd() {
+export default function EquipmentEdit() {
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
   const { toast } = useToast()
   const [formData, setFormData] = useState({
     name: "",
@@ -31,16 +32,62 @@ export default function EquipmentAdd() {
   })
 
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [departments, setDepartments] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [users, setUsers] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [departmentsLoading, setDepartmentsLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(true)
 
-  // Load departments and users on component mount
+  // Load equipment data and options on component mount
   useEffect(() => {
-    loadDepartments()
-    loadUsers()
-  }, [])
+    if (id) {
+      loadEquipmentData(id)
+      loadDepartments()
+      loadUsers()
+    }
+  }, [id])
+
+  const loadEquipmentData = async (equipmentId: string) => {
+    try {
+      setInitialLoading(true)
+      const equipmentData = await EquipmentService.getEquipmentById(equipmentId)
+      
+      if (!equipmentData) {
+        toast({
+          title: "ไม่พบข้อมูล",
+          description: "ไม่พบข้อมูลครุภัณฑ์นี้",
+          variant: "destructive"
+        })
+        navigate("/equipment/list")
+        return
+      }
+
+      setFormData({
+        name: equipmentData.name,
+        type: equipmentData.type,
+        brand: equipmentData.brand,
+        model: equipmentData.model,
+        serial_number: equipmentData.serial_number,
+        notes: equipmentData.notes || "",
+        purchase_date: equipmentData.purchase_date || "",
+        warranty_date: equipmentData.warranty_date || "",
+        purchase_price: equipmentData.purchase_price?.toString() || "",
+        department_id: equipmentData.department_id || "",
+        current_user_id: equipmentData.current_user_id || "",
+        status: equipmentData.status,
+        location: equipmentData.location || ""
+      })
+    } catch (error) {
+      console.error('Error loading equipment data:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดข้อมูลครุภัณฑ์ได้",
+        variant: "destructive"
+      })
+    } finally {
+      setInitialLoading(false)
+    }
+  }
 
   const loadDepartments = async () => {
     try {
@@ -91,8 +138,8 @@ export default function EquipmentAdd() {
         return
       }
 
-      // Check if serial number exists
-      const serialExists = await EquipmentService.checkSerialNumberExists(formData.serial_number)
+      // Check if serial number exists (excluding current equipment)
+      const serialExists = await EquipmentService.checkSerialNumberExists(formData.serial_number, id)
       if (serialExists) {
         toast({
           title: "เลขประจำเครื่องซ้ำ",
@@ -102,8 +149,8 @@ export default function EquipmentAdd() {
         return
       }
 
-      // Create equipment
-      await EquipmentService.createEquipment({
+      // Update equipment
+      await EquipmentService.updateEquipment(id!, {
         name: formData.name.trim(),
         type: formData.type,
         brand: formData.brand.trim(),
@@ -121,21 +168,32 @@ export default function EquipmentAdd() {
       
       toast({
         title: "สำเร็จ",
-        description: "เพิ่มครุภัณฑ์ใหม่เรียบร้อยแล้ว"
+        description: "อัปเดตข้อมูลครุภัณฑ์เรียบร้อยแล้ว"
       })
       
       // Navigate back to equipment list
       navigate("/equipment/list")
     } catch (error) {
-      console.error("Error saving equipment:", error)
+      console.error("Error updating equipment:", error)
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถเพิ่มครุภัณฑ์ได้",
+        description: "ไม่สามารถอัปเดตข้อมูลครุภัณฑ์ได้",
         variant: "destructive"
       })
     } finally {
       setLoading(false)
     }
+  }
+
+  if (initialLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span className="ml-2">กำลังโหลดข้อมูล...</span>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -152,9 +210,9 @@ export default function EquipmentAdd() {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">เพิ่มครุภัณฑ์ใหม่</h1>
+              <h1 className="text-2xl font-bold text-foreground">แก้ไขข้อมูลครุภัณฑ์</h1>
               <p className="text-muted-foreground">
-                เพิ่มครุภัณฑ์ใหม่เข้าสู่ระบบ
+                แก้ไขข้อมูลครุภัณฑ์ในระบบ
               </p>
             </div>
           </div>
@@ -376,7 +434,7 @@ export default function EquipmentAdd() {
                         <SelectValue placeholder="เลือกสถานะ" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="normal">พร้อมใช้งาน</SelectItem>
+                        <SelectItem value="normal">ใช้งานปกติ</SelectItem>
                         <SelectItem value="maintenance">อยู่ระหว่างบำรุงรักษา</SelectItem>
                         <SelectItem value="damaged">เสียหาย</SelectItem>
                         <SelectItem value="disposed">ปลดระวาง</SelectItem>
@@ -401,7 +459,7 @@ export default function EquipmentAdd() {
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      เพิ่มครุภัณฑ์
+                      บันทึกการเปลี่ยนแปลง
                     </Button>
                     <Button 
                       variant="outline" 
@@ -420,4 +478,4 @@ export default function EquipmentAdd() {
       </div>
     </DashboardLayout>
   )
-}
+} 

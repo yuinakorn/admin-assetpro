@@ -10,7 +10,8 @@ import {
   Users, 
   Settings,
   ChevronRight,
-  Package
+  Package,
+  Building
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
@@ -54,6 +55,22 @@ const menuItems = [
     ],
   },
   {
+    title: "จัดการแผนก",
+    icon: Building,
+    items: [
+      {
+        title: "เพิ่มแผนกใหม่",
+        url: "/departments/add",
+        icon: Plus,
+      },
+      {
+        title: "รายการแผนก",
+        url: "/departments",
+        icon: List,
+      },
+    ],
+  },
+  {
     title: "รายงาน",
     url: "/reports",
     icon: FileText,
@@ -70,8 +87,19 @@ const menuItems = [
   },
   {
     title: "จัดการผู้ใช้งาน",
-    url: "/users",
     icon: Users,
+    items: [
+      {
+        title: "เพิ่มผู้ใช้งานใหม่",
+        url: "/users/add",
+        icon: Plus,
+      },
+      {
+        title: "รายการผู้ใช้งาน",
+        url: "/users",
+        icon: List,
+      },
+    ],
   },
   {
     title: "ตั้งค่าระบบ",
