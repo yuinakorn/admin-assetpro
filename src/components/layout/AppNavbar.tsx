@@ -12,8 +12,57 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { useAuth } from "@/contexts/AuthContext"
+import { useNavigate } from "react-router-dom"
+import { useToast } from "@/hooks/use-toast"
 
 export function AppNavbar() {
+  const { user, signOut } = useAuth()
+  const { toast } = useToast()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      toast({
+        title: "ออกจากระบบสำเร็จ",
+        description: "ขอบคุณที่ใช้งานระบบจัดการครุภัณฑ์",
+      })
+      navigate('/login')
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถออกจากระบบได้",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+    }
+    return user?.email || 'ผู้ใช้งาน'
+  }
+
+  const getUserRole = () => {
+    const role = user?.user_metadata?.role || 'user'
+    const roleLabels = {
+      'admin': 'ผู้ดูแลระบบ',
+      'manager': 'ผู้จัดการ',
+      'user': 'ผู้ใช้งาน'
+    }
+    return roleLabels[role as keyof typeof roleLabels] || 'ผู้ใช้งาน'
+  }
+
+  const getInitials = () => {
+    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name.charAt(0)}${user.user_metadata.last_name.charAt(0)}`
+    }
+    return user?.email?.charAt(0).toUpperCase() || 'U'
+  }
+
   return (
     <header className="h-16 border-b bg-card flex items-center justify-between px-4 shadow-sm">
       {/* Left side - Sidebar trigger */}
@@ -50,12 +99,12 @@ export function AppNavbar() {
               <Avatar className="w-8 h-8">
                 <AvatarImage src="/placeholder-user.jpg" alt="User" />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  ผอ
+                  {getInitials()}
                 </AvatarFallback>
               </Avatar>
               <div className="text-left hidden md:block">
-                <p className="text-sm font-medium">นายผู้อำนวยการ</p>
-                <p className="text-xs text-muted-foreground">ผู้ดูแลระบบ</p>
+                <p className="text-sm font-medium">{getUserDisplayName()}</p>
+                <p className="text-xs text-muted-foreground">{getUserRole()}</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
@@ -71,7 +120,10 @@ export function AppNavbar() {
               ตั้งค่า
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-destructive">
+            <DropdownMenuItem 
+              className="cursor-pointer text-destructive"
+              onClick={handleLogout}
+            >
               <LogOut className="w-4 h-4 mr-2" />
               ออกจากระบบ
             </DropdownMenuItem>

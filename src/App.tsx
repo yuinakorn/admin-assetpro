@@ -3,7 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 import EquipmentAdd from "./pages/EquipmentAdd";
 import EquipmentList from "./pages/EquipmentList";
 import DepartmentList from "./pages/DepartmentList";
@@ -25,32 +30,120 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/equipment/add" element={<EquipmentAdd />} />
-          <Route path="/equipment/list" element={<EquipmentList />} />
-          <Route path="/equipment/edit/:id" element={<EquipmentEdit />} />
-          <Route path="/equipment/detail/:id" element={<EquipmentDetail />} />
-          <Route path="/departments" element={<DepartmentList />} />
-          <Route path="/departments/add" element={<DepartmentAdd />} />
-          <Route path="/departments/edit/:id" element={<DepartmentEdit />} />
-          <Route path="/users" element={<UserList />} />
-          <Route path="/users/add" element={<UserAdd />} />
-          <Route path="/users/detail/:id" element={<UserDetail />} />
-          <Route path="/users/edit/:id" element={<UserEdit />} />
-          <Route path="/categories" element={<CategoryList />} />
-          <Route path="/categories/add" element={<CategoryAdd />} />
-          <Route path="/categories/edit/:id" element={<CategoryEdit />} />
-          <Route path="/history" element={<History />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/equipment/add" element={
+              <ProtectedRoute>
+                <EquipmentAdd />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/equipment/list" element={
+              <ProtectedRoute>
+                <EquipmentList />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/equipment/edit/:id" element={
+              <ProtectedRoute>
+                <EquipmentEdit />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/equipment/detail/:id" element={
+              <ProtectedRoute>
+                <EquipmentDetail />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/departments" element={
+              <ProtectedRoute>
+                <DepartmentList />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/departments/add" element={
+              <ProtectedRoute requiredRole="admin">
+                <DepartmentAdd />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/departments/edit/:id" element={
+              <ProtectedRoute requiredRole="admin">
+                <DepartmentEdit />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users" element={
+              <ProtectedRoute requiredRole="admin">
+                <UserList />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/add" element={
+              <ProtectedRoute requiredRole="admin">
+                <UserAdd />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/detail/:id" element={
+              <ProtectedRoute>
+                <UserDetail />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/edit/:id" element={
+              <ProtectedRoute requiredRole="admin">
+                <UserEdit />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/categories" element={
+              <ProtectedRoute>
+                <CategoryList />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/categories/add" element={
+              <ProtectedRoute requiredRole="manager">
+                <CategoryAdd />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/categories/edit/:id" element={
+              <ProtectedRoute requiredRole="manager">
+                <CategoryEdit />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/history" element={
+              <ProtectedRoute>
+                <History />
+              </ProtectedRoute>
+            } />
+            
+            {/* Catch-all route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

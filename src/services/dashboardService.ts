@@ -8,6 +8,8 @@ export interface DashboardStats {
   damaged_equipment: number
   disposed_equipment: number
   borrowed_equipment: number
+  total_users: number
+  total_departments: number
   expiring_warranty: number
   expired_warranty: number
 }
@@ -49,11 +51,30 @@ export class DashboardService {
   // Get dashboard statistics
   static async getDashboardStats(): Promise<DashboardStats> {
     try {
-      const { data: equipment, error } = await supabase
+      // Get equipment data
+      const { data: equipment, error: equipmentError } = await supabase
         .from('equipment')
         .select('status, warranty_date')
 
-      if (error) throw error
+      if (equipmentError) throw equipmentError
+
+      // Get users count
+      const { count: usersCount, error: usersError } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+
+      if (usersError) {
+        console.warn('Error counting users:', usersError)
+      }
+
+      // Get departments count
+      const { count: departmentsCount, error: departmentsError } = await supabase
+        .from('departments')
+        .select('*', { count: 'exact', head: true })
+
+      if (departmentsError) {
+        console.warn('Error counting departments:', departmentsError)
+      }
 
       const now = new Date()
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
@@ -66,6 +87,8 @@ export class DashboardService {
         damaged_equipment: equipment.filter(item => item.status === 'damaged').length,
         disposed_equipment: equipment.filter(item => item.status === 'disposed').length,
         borrowed_equipment: equipment.filter(item => item.status === 'borrowed').length,
+        total_users: usersCount || 0,
+        total_departments: departmentsCount || 0,
         expiring_warranty: equipment.filter(item => {
           if (!item.warranty_date) return false
           const warrantyDate = new Date(item.warranty_date)
@@ -88,6 +111,8 @@ export class DashboardService {
         damaged_equipment: 0,
         disposed_equipment: 0,
         borrowed_equipment: 0,
+        total_users: 0,
+        total_departments: 0,
         expiring_warranty: 0,
         expired_warranty: 0
       }
