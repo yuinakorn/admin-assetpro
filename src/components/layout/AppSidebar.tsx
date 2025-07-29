@@ -23,6 +23,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -145,6 +151,81 @@ export function AppSidebar() {
     }
   ]
 
+  const renderMenuItem = (item: {
+    label: string
+    icon: React.ComponentType<{ className?: string }>
+    url: string
+    show: boolean
+    children?: Array<{ label: string; url: string; show?: boolean }>
+  }) => {
+    const Icon = item.icon
+    const isItemActive = isActive(item.url)
+    const isParent = item.children && isParentActive(item.children)
+
+    // If item has children, render as collapsible menu
+    if (item.children && item.children.length > 0) {
+      return (
+        <Collapsible key={item.url} defaultOpen={isParent} className="group/collapsible">
+          <SidebarMenuItem>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isItemActive || isParent}>
+                      <Icon className="h-4 w-4" />
+                      <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                      <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180 group-data-[collapsible=icon]:hidden" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="group-data-[collapsible=expanded]:hidden">
+                  <p>{item.label}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
+              <SidebarMenuSub>
+                {item.children.filter(child => child.show !== false).map((child) => (
+                  <SidebarMenuSubItem key={child.url}>
+                    <SidebarMenuSubButton
+                      asChild
+                      isActive={isActive(child.url)}
+                    >
+                      <NavLink to={child.url}>
+                        <span>{child.label}</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                ))}
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </SidebarMenuItem>
+        </Collapsible>
+      )
+    }
+
+    // If item has no children, render as simple menu item
+    return (
+      <SidebarMenuItem key={item.url}>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SidebarMenuButton asChild isActive={isItemActive}>
+                <NavLink to={item.url}>
+                  <Icon className="h-4 w-4" />
+                  <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="group-data-[collapsible=expanded]:hidden">
+              <p>{item.label}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </SidebarMenuItem>
+    )
+  }
+
   return (
     <Sidebar className="h-screen" collapsible="icon">
       <SidebarHeader className="border-b p-4">
@@ -161,56 +242,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">เมนูหลัก</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.filter(item => item.show).map((item) => {
-                const Icon = item.icon
-                const isItemActive = isActive(item.url)
-                const isParent = item.children && isParentActive(item.children)
-
-                // If item has children, render as collapsible menu
-                if (item.children && item.children.length > 0) {
-                  return (
-                    <Collapsible key={item.url} defaultOpen={isParent} className="group/collapsible">
-                      <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton isActive={isItemActive || isParent}>
-                            <Icon className="h-4 w-4" />
-                            <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180 group-data-[collapsible=icon]:hidden" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
-                          <SidebarMenuSub>
-                            {item.children.filter(child => child.show !== false).map((child) => (
-                              <SidebarMenuSubItem key={child.url}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={isActive(child.url)}
-                                >
-                                  <NavLink to={child.url}>
-                                    <span>{child.label}</span>
-                                  </NavLink>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </SidebarMenuItem>
-                    </Collapsible>
-                  )
-                }
-
-                // If item has no children, render as simple menu item
-                return (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={isItemActive}>
-                      <NavLink to={item.url}>
-                        <Icon className="h-4 w-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+              {menuItems.filter(item => item.show).map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -230,15 +262,24 @@ export function AppSidebar() {
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:px-0"
-          onClick={handleLogout}
-        >
-          <LogOut className="w-4 h-4 mr-2 group-data-[collapsible=icon]:mr-0" />
-          <span className="group-data-[collapsible=icon]:hidden">ออกจากระบบ</span>
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:px-0"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-4 h-4 mr-2 group-data-[collapsible=icon]:mr-0" />
+                <span className="group-data-[collapsible=icon]:hidden">ออกจากระบบ</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="group-data-[collapsible=expanded]:hidden">
+              <p>ออกจากระบบ</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </SidebarFooter>
     </Sidebar>
   )
