@@ -8,13 +8,20 @@ import {
   FileText,
   Tags,
   LogOut,
-  User
+  User,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/usePermissions"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   Sidebar,
   SidebarContent,
@@ -23,11 +30,12 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
 export function AppSidebar() {
@@ -78,17 +86,6 @@ export function AppSidebar() {
 
   const isParentActive = (items: Array<{ url: string }>) => {
     return items.some(item => location.pathname.startsWith(item.url))
-  }
-
-  const getNavClass = (isActive: boolean, isParent = false) => {
-    const baseClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-    if (isActive) {
-      return `${baseClass} bg-primary text-primary-foreground`
-    }
-    if (isParent) {
-      return `${baseClass} bg-muted text-muted-foreground`
-    }
-    return `${baseClass} text-muted-foreground hover:bg-muted hover:text-foreground`
   }
 
   const menuItems = [
@@ -158,50 +155,63 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
-          {menuItems.filter(item => item.show).map((item) => {
-            const Icon = item.icon
-            const isItemActive = isActive(item.url)
-            const isParent = item.children && isParentActive(item.children)
+        <SidebarGroup>
+          <SidebarGroupLabel>เมนูหลัก</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.filter(item => item.show).map((item) => {
+                const Icon = item.icon
+                const isItemActive = isActive(item.url)
+                const isParent = item.children && isParentActive(item.children)
 
-            return (
-              <SidebarMenuItem key={item.url}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isItemActive || isParent}
-                >
-                  <NavLink
-                    to={item.url}
-                    className={getNavClass(isItemActive, isParent)}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </NavLink>
-                </SidebarMenuButton>
-                {item.children && (
-                  <SidebarGroup>
-                    <SidebarGroupContent>
-                      {item.children.filter(child => child.show !== false).map((child) => (
-                        <SidebarMenuButton
-                          key={child.url}
-                          asChild
-                          isActive={isActive(child.url)}
-                        >
-                          <NavLink
-                            to={child.url}
-                            className={getNavClass(isActive(child.url))}
-                          >
-                            <span className="ml-6">{child.label}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      ))}
-                    </SidebarGroupContent>
-                  </SidebarGroup>
-                )}
-              </SidebarMenuItem>
-            )
-          })}
-        </SidebarMenu>
+                // If item has children, render as collapsible menu
+                if (item.children && item.children.length > 0) {
+                  return (
+                    <Collapsible key={item.url} defaultOpen={isParent} className="group/collapsible">
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton isActive={isItemActive || isParent}>
+                            <Icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.children.filter(child => child.show !== false).map((child) => (
+                              <SidebarMenuSubItem key={child.url}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isActive(child.url)}
+                                >
+                                  <NavLink to={child.url}>
+                                    <span>{child.label}</span>
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  )
+                }
+
+                // If item has no children, render as simple menu item
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={isItemActive}>
+                      <NavLink to={item.url}>
+                        <Icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center gap-3 mb-3">
