@@ -76,11 +76,10 @@ export default function Register() {
       const userData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
-        username: formData.username,
         role: formData.role
       }
 
-      const { error } = await signUp(formData.email, formData.password, userData)
+      const { error } = await signUp(formData.username, formData.email, formData.password, userData)
       
       if (error) {
         if (error.message.includes('User already registered')) {
@@ -88,7 +87,7 @@ export default function Register() {
         } else if (error.message.includes('Password should be at least')) {
           setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร')
         } else {
-          setError('เกิดข้อผิดพลาดในการสมัครสมาชิก')
+          setError(error.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก')
         }
       } else {
         setSuccess(true)

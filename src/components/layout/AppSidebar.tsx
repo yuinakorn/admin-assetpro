@@ -1,17 +1,11 @@
-import { useState } from "react"
-import { 
-  LayoutDashboard, 
-  Monitor, 
-  Plus, 
-  List, 
-  FileText, 
-  ArrowRightLeft, 
-  History, 
-  Users, 
-  Settings,
-  ChevronRight,
+import {
+  Monitor,
+  Users,
+  Building2,
   Package,
-  Building,
+  Settings,
+  BarChart3,
+  FileText,
   Tags,
   LogOut,
   User
@@ -20,132 +14,28 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
-
+import { usePermissions } from "@/hooks/usePermissions"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  useSidebar,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "จัดการครุภัณฑ์",
-    icon: Monitor,
-    items: [
-      {
-        title: "เพิ่มครุภัณฑ์ใหม่",
-        url: "/equipment/add",
-        icon: Plus,
-      },
-      {
-        title: "รายการครุภัณฑ์",
-        url: "/equipment/list",
-        icon: List,
-      },
-    ],
-  },
-  {
-    title: "จัดการประเภทครุภัณฑ์",
-    icon: Tags,
-    items: [
-      {
-        title: "เพิ่มประเภทใหม่",
-        url: "/categories/add",
-        icon: Plus,
-      },
-      {
-        title: "รายการประเภท",
-        url: "/categories",
-        icon: List,
-      },
-    ],
-  },
-  {
-    title: "จัดการแผนก",
-    icon: Building,
-    items: [
-      {
-        title: "เพิ่มแผนกใหม่",
-        url: "/departments/add",
-        icon: Plus,
-      },
-      {
-        title: "รายการแผนก",
-        url: "/departments",
-        icon: List,
-      },
-    ],
-  },
-  {
-    title: "รายงาน",
-    url: "/reports",
-    icon: FileText,
-  },
-  {
-    title: "การยืม-คืน",
-    url: "/borrow-return",
-    icon: ArrowRightLeft,
-  },
-  {
-    title: "ประวัติการแก้ไข",
-    url: "/history",
-    icon: History,
-  },
-  {
-    title: "จัดการผู้ใช้งาน",
-    icon: Users,
-    items: [
-      {
-        title: "เพิ่มผู้ใช้งานใหม่",
-        url: "/users/add",
-        icon: Plus,
-      },
-      {
-        title: "รายการผู้ใช้งาน",
-        url: "/users",
-        icon: List,
-      },
-    ],
-  },
-  {
-    title: "ตั้งค่าระบบ",
-    url: "/settings",
-    icon: Settings,
-  },
-]
 
 export function AppSidebar() {
-  const { state } = useSidebar()
   const location = useLocation()
-  const currentPath = location.pathname
-  const collapsed = state === "collapsed"
   const { user, signOut } = useAuth()
   const { toast } = useToast()
   const navigate = useNavigate()
-
-  const isActive = (path: string) => currentPath === path
-  const isParentActive = (items: Array<{ url: string }>) => items?.some(item => isActive(item.url))
-
-  const getNavClass = (active: boolean) =>
-    active 
-      ? "bg-primary text-primary-foreground font-medium" 
-      : "hover:bg-muted/50 text-foreground"
+  const permissions = usePermissions()
 
   const handleLogout = async () => {
     try {
@@ -182,112 +72,162 @@ export function AppSidebar() {
     return roleLabels[role as keyof typeof roleLabels] || 'ผู้ใช้งาน'
   }
 
+  const isActive = (url: string) => {
+    return location.pathname === url
+  }
+
+  const isParentActive = (items: Array<{ url: string }>) => {
+    return items.some(item => location.pathname.startsWith(item.url))
+  }
+
+  const getNavClass = (isActive: boolean, isParent = false) => {
+    const baseClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+    if (isActive) {
+      return `${baseClass} bg-primary text-primary-foreground`
+    }
+    if (isParent) {
+      return `${baseClass} bg-muted text-muted-foreground`
+    }
+    return `${baseClass} text-muted-foreground hover:bg-muted hover:text-foreground`
+  }
+
+  const menuItems = [
+    {
+      label: "แดชบอร์ด",
+      icon: BarChart3,
+      url: "/dashboard",
+      show: true // All users can see dashboard
+    },
+    {
+      label: "ครุภัณฑ์",
+      icon: Monitor,
+      url: "/equipment",
+      show: permissions.canViewEquipment,
+      children: [
+        { label: "รายการครุภัณฑ์", url: "/equipment/list" },
+        { label: "เพิ่มครุภัณฑ์", url: "/equipment/add", show: permissions.canAddEquipment }
+      ]
+    },
+    {
+      label: "ผู้ใช้งาน",
+      icon: Users,
+      url: "/users",
+      show: permissions.canViewUsers,
+      children: [
+        { label: "รายการผู้ใช้", url: "/users" },
+        { label: "เพิ่มผู้ใช้", url: "/users/add", show: permissions.canAddUsers }
+      ]
+    },
+    {
+      label: "แผนก",
+      icon: Building2,
+      url: "/departments",
+      show: permissions.canViewDepartments,
+      children: [
+        { label: "รายการแผนก", url: "/departments" },
+        { label: "เพิ่มแผนก", url: "/departments/add", show: permissions.canAddDepartments }
+      ]
+    },
+    {
+      label: "ประเภทครุภัณฑ์",
+      icon: Tags,
+      url: "/categories",
+      show: permissions.canViewCategories,
+      children: [
+        { label: "รายการประเภท", url: "/categories" },
+        { label: "เพิ่มประเภท", url: "/categories/add", show: permissions.canAddCategories }
+      ]
+    },
+    {
+      label: "ประวัติ",
+      icon: FileText,
+      url: "/history",
+      show: permissions.canViewActivities
+    }
+  ]
+
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
-      <SidebarContent className="bg-card border-r flex flex-col h-full">
-        {/* Logo/Brand */}
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Package className="w-5 h-5 text-primary-foreground" />
-            </div>
-            {!collapsed && (
-              <div>
-                <h2 className="font-semibold text-sm text-foreground">ระบบครุภัณฑ์</h2>
-                <p className="text-xs text-muted-foreground">สำนักงานสาธารณสุขจังหวัด</p>
-              </div>
-            )}
+    <Sidebar className="h-screen">
+      <SidebarHeader className="border-b p-4">
+        <div className="flex items-center gap-2">
+          <Package className="h-6 w-6" />
+          <div>
+            <h2 className="text-lg font-semibold">AssetPro</h2>
+            <p className="text-xs text-muted-foreground">ระบบจัดการครุภัณฑ์</p>
           </div>
         </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarMenu>
+          {menuItems.filter(item => item.show).map((item) => {
+            const Icon = item.icon
+            const isItemActive = isActive(item.url)
+            const isParent = item.children && isParentActive(item.children)
 
-        {/* Navigation Menu */}
-        <div className="flex-1">
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground px-4 py-2">
-              เมนูหลัก
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {menuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    {item.items ? (
-                      <Collapsible defaultOpen={isParentActive(item.items)}>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton className="w-full justify-between hover:bg-muted/50">
-                            <div className="flex items-center gap-3">
-                              <item.icon className="w-4 h-4" />
-                              {!collapsed && <span>{item.title}</span>}
-                            </div>
-                            {!collapsed && <ChevronRight className="w-4 h-4" />}
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        {!collapsed && (
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              {item.items.map((subItem) => (
-                                <SidebarMenuSubItem key={subItem.title}>
-                                  <SidebarMenuSubButton asChild>
-                                    <NavLink 
-                                      to={subItem.url} 
-                                      className={getNavClass(isActive(subItem.url))}
-                                    >
-                                      <subItem.icon className="w-4 h-4" />
-                                      <span>{subItem.title}</span>
-                                    </NavLink>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        )}
-                      </Collapsible>
-                    ) : (
-                      <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={item.url} 
-                          className={getNavClass(isActive(item.url))}
+            return (
+              <SidebarMenuItem key={item.url}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isItemActive || isParent}
+                >
+                  <NavLink
+                    to={item.url}
+                    className={getNavClass(isItemActive, isParent)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+                {item.children && (
+                  <SidebarGroup>
+                    <SidebarGroupContent>
+                      {item.children.filter(child => child.show !== false).map((child) => (
+                        <SidebarMenuButton
+                          key={child.url}
+                          asChild
+                          isActive={isActive(child.url)}
                         >
-                          <item.icon className="w-4 h-4" />
-                          {!collapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                          <NavLink
+                            to={child.url}
+                            className={getNavClass(isActive(child.url))}
+                          >
+                            <span className="ml-6">{child.label}</span>
+                          </NavLink>
+                        </SidebarMenuButton>
+                      ))}
+                    </SidebarGroupContent>
+                  </SidebarGroup>
+                )}
+              </SidebarMenuItem>
+            )
+          })}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter className="border-t p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
+              {getUserDisplayName()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {getUserRole()}
+            </p>
+          </div>
         </div>
 
-        {/* User Profile Section */}
-        <div className="border-t p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-blue-600" />
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {getUserDisplayName()}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {getUserRole()}
-                </p>
-              </div>
-            )}
-          </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            {!collapsed && "ออกจากระบบ"}
-          </Button>
-        </div>
-      </SidebarContent>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={handleLogout}
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          ออกจากระบบ
+        </Button>
+      </SidebarFooter>
     </Sidebar>
   )
 }
