@@ -9,6 +9,7 @@ import { ArrowLeft, Save, Plus, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
+import { EquipmentCategoryService } from "@/services/equipmentCategoryService"
 import { useToast } from "@/hooks/use-toast"
 
 export default function EquipmentAdd() {
@@ -33,13 +34,16 @@ export default function EquipmentAdd() {
   const [loading, setLoading] = useState(false)
   const [departments, setDepartments] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [users, setUsers] = useState<Array<{ id: string; name: string; role: string }>>([])
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [departmentsLoading, setDepartmentsLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(true)
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
 
-  // Load departments and users on component mount
+  // Load departments, users, and categories on component mount
   useEffect(() => {
     loadDepartments()
     loadUsers()
+    loadCategories()
   }, [])
 
   const loadDepartments = async () => {
@@ -76,6 +80,72 @@ export default function EquipmentAdd() {
     }
   }
 
+  const loadCategories = async () => {
+    try {
+      setCategoriesLoading(true)
+      console.log('Loading categories...')
+      const data = await EquipmentCategoryService.getCategoriesForEquipment()
+      console.log('Categories loaded:', data)
+      setCategories(data)
+    } catch (error) {
+      console.error('Error loading categories:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดประเภทครุภัณฑ์ได้",
+        variant: "destructive"
+      })
+    } finally {
+      setCategoriesLoading(false)
+    }
+  }
+
+  // Helper function to map category code to equipment type
+  const mapCategoryCodeToType = (code: string): "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device" => {
+    const codeMap: Record<string, "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device"> = {
+      'COMPUTER': 'computer',
+      'LAPTOP': 'laptop',
+      'MONITOR': 'monitor',
+      'PRINTER': 'printer',
+      'UPS': 'ups',
+      'NETWORK': 'network_device'
+    }
+    return codeMap[code] || 'computer'
+  }
+
+  // Show loading state while initial data is loading
+  if (departmentsLoading || usersLoading || categoriesLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate("/equipment/list")}
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">เพิ่มครุภัณฑ์ใหม่</h1>
+                <p className="text-muted-foreground">
+                  เพิ่มครุภัณฑ์ใหม่เข้าสู่ระบบ
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <span>กำลังโหลดข้อมูล...</span>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -102,32 +172,33 @@ export default function EquipmentAdd() {
         return
       }
 
-      // Create equipment
-      await EquipmentService.createEquipment({
-        name: formData.name.trim(),
+      // Create equipment data
+      const equipmentData = {
+        name: formData.name,
         type: formData.type,
-        brand: formData.brand.trim(),
-        model: formData.model.trim(),
-        serial_number: formData.serial_number.trim(),
-        notes: formData.notes.trim() || null,
+        brand: formData.brand,
+        model: formData.model,
+        serial_number: formData.serial_number,
+        notes: formData.notes,
         purchase_date: formData.purchase_date || null,
         warranty_date: formData.warranty_date || null,
         purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
         department_id: formData.department_id || null,
         current_user_id: formData.current_user_id || null,
         status: formData.status,
-        location: formData.location.trim() || null
-      })
+        location: formData.location
+      }
+
+      await EquipmentService.createEquipment(equipmentData)
       
       toast({
-        title: "สำเร็จ",
-        description: "เพิ่มครุภัณฑ์ใหม่เรียบร้อยแล้ว"
+        title: "เพิ่มครุภัณฑ์สำเร็จ",
+        description: "เพิ่มครุภัณฑ์ใหม่เรียบร้อยแล้ว",
       })
       
-      // Navigate back to equipment list
       navigate("/equipment/list")
     } catch (error) {
-      console.error("Error saving equipment:", error)
+      console.error('Error creating equipment:', error)
       toast({
         title: "เกิดข้อผิดพลาด",
         description: "ไม่สามารถเพิ่มครุภัณฑ์ได้",
@@ -186,17 +257,33 @@ export default function EquipmentAdd() {
                       <Select 
                         value={formData.type} 
                         onValueChange={(value: "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device") => setFormData({ ...formData, type: value })}
+                        disabled={categoriesLoading}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="เลือกประเภท" />
+                          <SelectValue placeholder={categoriesLoading ? "กำลังโหลด..." : "เลือกประเภท"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="computer">คอมพิวเตอร์</SelectItem>
-                          <SelectItem value="laptop">แลปท็อป</SelectItem>
-                          <SelectItem value="monitor">จอคอมพิวเตอร์</SelectItem>
-                          <SelectItem value="printer">เครื่องพิมพ์</SelectItem>
-                          <SelectItem value="ups">UPS</SelectItem>
-                          <SelectItem value="network_device">อุปกรณ์เครือข่าย</SelectItem>
+                          {categoriesLoading ? (
+                            <SelectItem value="" disabled>
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                กำลังโหลด...
+                              </div>
+                            </SelectItem>
+                          ) : categories.length === 0 ? (
+                            <SelectItem value="" disabled>
+                              ไม่พบประเภทครุภัณฑ์
+                            </SelectItem>
+                          ) : (
+                            categories.map((category) => (
+                              <SelectItem 
+                                key={category.id} 
+                                value={mapCategoryCodeToType(category.code)}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>

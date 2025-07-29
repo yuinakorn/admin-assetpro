@@ -9,6 +9,7 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
+import { EquipmentCategoryService } from "@/services/equipmentCategoryService"
 import { useToast } from "@/hooks/use-toast"
 
 export default function EquipmentEdit() {
@@ -35,8 +36,10 @@ export default function EquipmentEdit() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [departments, setDepartments] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [users, setUsers] = useState<Array<{ id: string; name: string; role: string }>>([])
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [departmentsLoading, setDepartmentsLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(true)
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
 
   // Load equipment data and options on component mount
   useEffect(() => {
@@ -44,6 +47,7 @@ export default function EquipmentEdit() {
       loadEquipmentData(id)
       loadDepartments()
       loadUsers()
+      loadCategories()
     }
   }, [id])
 
@@ -121,6 +125,36 @@ export default function EquipmentEdit() {
     } finally {
       setUsersLoading(false)
     }
+  }
+
+  const loadCategories = async () => {
+    try {
+      setCategoriesLoading(true)
+      const data = await EquipmentCategoryService.getCategoriesForEquipment()
+      setCategories(data)
+    } catch (error) {
+      console.error('Error loading categories:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดประเภทครุภัณฑ์ได้",
+        variant: "destructive"
+      })
+    } finally {
+      setCategoriesLoading(false)
+    }
+  }
+
+  // Helper function to map category code to equipment type
+  const mapCategoryCodeToType = (code: string): "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device" => {
+    const codeMap: Record<string, "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device"> = {
+      'COMPUTER': 'computer',
+      'LAPTOP': 'laptop',
+      'MONITOR': 'monitor',
+      'PRINTER': 'printer',
+      'UPS': 'ups',
+      'NETWORK': 'network_device'
+    }
+    return codeMap[code] || 'computer'
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -244,17 +278,33 @@ export default function EquipmentEdit() {
                       <Select 
                         value={formData.type} 
                         onValueChange={(value: "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device") => setFormData({ ...formData, type: value })}
+                        disabled={categoriesLoading}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="เลือกประเภท" />
+                          <SelectValue placeholder={categoriesLoading ? "กำลังโหลด..." : "เลือกประเภท"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="computer">คอมพิวเตอร์</SelectItem>
-                          <SelectItem value="laptop">แลปท็อป</SelectItem>
-                          <SelectItem value="monitor">จอคอมพิวเตอร์</SelectItem>
-                          <SelectItem value="printer">เครื่องพิมพ์</SelectItem>
-                          <SelectItem value="ups">UPS</SelectItem>
-                          <SelectItem value="network_device">อุปกรณ์เครือข่าย</SelectItem>
+                          {categoriesLoading ? (
+                            <SelectItem value="" disabled>
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                กำลังโหลด...
+                              </div>
+                            </SelectItem>
+                          ) : categories.length === 0 ? (
+                            <SelectItem value="" disabled>
+                              ไม่พบประเภทครุภัณฑ์
+                            </SelectItem>
+                          ) : (
+                            categories.map((category) => (
+                              <SelectItem 
+                                key={category.id} 
+                                value={mapCategoryCodeToType(category.code)}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
