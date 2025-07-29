@@ -36,6 +36,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function AppSidebar() {
@@ -44,6 +45,7 @@ export function AppSidebar() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const permissions = usePermissions()
+  const { state } = useSidebar()
 
   const handleLogout = async () => {
     try {
@@ -144,11 +146,11 @@ export function AppSidebar() {
   ]
 
   return (
-    <Sidebar className="h-screen">
+    <Sidebar className="h-screen" collapsible="icon">
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2">
           <Package className="h-6 w-6" />
-          <div>
+          <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="text-lg font-semibold">AssetPro</h2>
             <p className="text-xs text-muted-foreground">ระบบจัดการครุภัณฑ์</p>
           </div>
@@ -156,7 +158,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>เมนูหลัก</SidebarGroupLabel>
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">เมนูหลัก</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.filter(item => item.show).map((item) => {
@@ -172,11 +174,11 @@ export function AppSidebar() {
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton isActive={isItemActive || isParent}>
                             <Icon className="h-4 w-4" />
-                            <span>{item.label}</span>
-                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                            <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180 group-data-[collapsible=icon]:hidden" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
-                        <CollapsibleContent>
+                        <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
                           <SidebarMenuSub>
                             {item.children.filter(child => child.show !== false).map((child) => (
                               <SidebarMenuSubItem key={child.url}>
@@ -203,7 +205,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild isActive={isItemActive}>
                       <NavLink to={item.url}>
                         <Icon className="h-4 w-4" />
-                        <span>{item.label}</span>
+                        <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -218,7 +220,7 @@ export function AppSidebar() {
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
             <User className="w-4 h-4 text-blue-600" />
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-medium text-foreground truncate">
               {getUserDisplayName()}
             </p>
@@ -231,11 +233,11 @@ export function AppSidebar() {
         <Button
           variant="outline"
           size="sm"
-          className="w-full"
+          className="w-full group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:px-0"
           onClick={handleLogout}
         >
-          <LogOut className="w-4 h-4 mr-2" />
-          ออกจากระบบ
+          <LogOut className="w-4 h-4 mr-2 group-data-[collapsible=icon]:mr-0" />
+          <span className="group-data-[collapsible=icon]:hidden">ออกจากระบบ</span>
         </Button>
       </SidebarFooter>
     </Sidebar>
