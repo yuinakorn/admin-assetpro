@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Edit, Trash2, Eye, CheckCircle, Wrench, XCircle, Clock, Package, Loader2, Filter } from "lucide-react"
+import { QRCodeComponent } from "@/components/ui/qr-code"
+import { Plus, Search, Edit, Trash2, Eye, CheckCircle, Wrench, XCircle, Clock, Package, Loader2, Filter, QrCode } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { EquipmentService, EquipmentWithDetails } from "@/services/equipmentService"
@@ -287,6 +288,7 @@ export default function EquipmentList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>QR Code</TableHead>
                       <TableHead>ชื่อครุภัณฑ์</TableHead>
                       <TableHead>ยี่ห้อ/รุ่น</TableHead>
                       <TableHead>เลขประจำเครื่อง</TableHead>
@@ -307,9 +309,20 @@ export default function EquipmentList() {
                       filteredEquipment.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell>
+                            <div className="flex justify-center">
+                              <div style={{ width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <QRCodeComponent 
+                                  value={item.equipment_code}
+                                  size={45}
+                                  className="!w-[45px] !h-[45px]"
+                                />
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <div>
                               <p className="font-medium">{item.name}</p>
-                              <p className="text-xs text-muted-foreground">{item.type_text}</p>
+                              <p className="text-sm text-muted-foreground font-mono">{item.equipment_code}</p>
                             </div>
                           </TableCell>
                           <TableCell>

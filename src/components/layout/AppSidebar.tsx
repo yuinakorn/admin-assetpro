@@ -11,7 +11,8 @@ import {
   Settings,
   ChevronRight,
   Package,
-  Building
+  Building,
+  Tags
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
@@ -50,6 +51,22 @@ const menuItems = [
       {
         title: "รายการครุภัณฑ์",
         url: "/equipment/list",
+        icon: List,
+      },
+    ],
+  },
+  {
+    title: "จัดการประเภทครุภัณฑ์",
+    icon: Tags,
+    items: [
+      {
+        title: "เพิ่มประเภทใหม่",
+        url: "/categories/add",
+        icon: Plus,
+      },
+      {
+        title: "รายการประเภท",
+        url: "/categories",
         icon: List,
       },
     ],

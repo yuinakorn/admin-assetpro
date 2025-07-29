@@ -16,6 +16,9 @@ import UserEdit from "./pages/UserEdit";
 import EquipmentEdit from "./pages/EquipmentEdit";
 import EquipmentDetail from "./pages/EquipmentDetail";
 import History from "./pages/History";
+import CategoryList from "./pages/CategoryList";
+import CategoryAdd from "./pages/CategoryAdd";
+import CategoryEdit from "./pages/CategoryEdit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +42,9 @@ const App = () => (
           <Route path="/users/add" element={<UserAdd />} />
           <Route path="/users/detail/:id" element={<UserDetail />} />
           <Route path="/users/edit/:id" element={<UserEdit />} />
+          <Route path="/categories" element={<CategoryList />} />
+          <Route path="/categories/add" element={<CategoryAdd />} />
+          <Route path="/categories/edit/:id" element={<CategoryEdit />} />
           <Route path="/history" element={<History />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

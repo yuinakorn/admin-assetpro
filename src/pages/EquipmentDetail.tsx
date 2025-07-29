@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Edit, Trash2, Calendar, MapPin, User, Building, Package, DollarSign, Shield, AlertTriangle, History, Clock, UserCheck } from "lucide-react"
+import { QRCodeComponent } from "@/components/ui/qr-code"
+import { ArrowLeft, Edit, Trash2, Calendar, MapPin, User, Building, Package, DollarSign, Shield, AlertTriangle, History, Clock, UserCheck, QrCode } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
@@ -359,31 +360,36 @@ export default function EquipmentDetail() {
                     </div>
                   </div>
                 </div>
+                <Separator />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">ยี่ห้อ</Label>
-                    <p className="text-sm">{equipment.brand}</p>
+                    <p className="text-sm">{equipment.brand || '-'}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">รุ่น</Label>
-                    <p className="text-sm">{equipment.model}</p>
+                    <p className="text-sm">{equipment.model || '-'}</p>
                   </div>
                 </div>
+                <Separator />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">เลขประจำเครื่อง</Label>
-                    <p className="text-sm font-mono">{equipment.serial_number}</p>
+                    <p className="text-sm font-mono">{equipment.serial_number || '-'}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">เลขครุภัณฑ์</Label>
-                    <p className="text-sm font-mono">{equipment.asset_number || "-"}</p>
+                    <p className="text-sm font-mono">{equipment.asset_number || '-'}</p>
                   </div>
                 </div>
                 {equipment.notes && (
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">หมายเหตุ</Label>
-                    <p className="text-sm mt-1">{equipment.notes}</p>
-                  </div>
+                  <>
+                    <Separator />
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">หมายเหตุ</Label>
+                      <p className="text-sm mt-1">{equipment.notes}</p>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -397,37 +403,48 @@ export default function EquipmentDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">วันที่จัดซื้อ</Label>
-                    <p className="text-sm">{formatDate(equipment.purchase_date)}</p>
+                    <Label className="text-sm font-medium text-muted-foreground">วันที่ซื้อ</Label>
+                    <p className="text-sm flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      {formatDate(equipment.purchase_date)}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">วันหมดประกัน</Label>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm">{formatDate(equipment.warranty_date)}</p>
-                      {equipment.warranty_date && (
-                        <>
-                          {isWarrantyExpired(equipment.warranty_date) && (
-                            <AlertTriangle className="w-4 h-4 text-red-500" />
-                          )}
-                          {isWarrantyExpiringSoon(equipment.warranty_date) && (
-                            <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">ราคา</Label>
-                    <p className="text-sm">{formatPrice(equipment.purchase_price)}</p>
+                    <Label className="text-sm font-medium text-muted-foreground">วันที่หมดประกัน</Label>
+                    <p className="text-sm flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      {formatDate(equipment.warranty_date)}
+                    </p>
                   </div>
                 </div>
-                {equipment.supplier && (
+                <Separator />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">ราคาซื้อ</Label>
+                    <p className="text-sm">{formatPrice(equipment.purchase_price)}</p>
+                  </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">ผู้จัดจำหน่าย</Label>
-                    <p className="text-sm">{equipment.supplier}</p>
+                    <p className="text-sm">{equipment.supplier || '-'}</p>
                   </div>
+                </div>
+                {(isWarrantyExpired(equipment.warranty_date) || isWarrantyExpiringSoon(equipment.warranty_date)) && (
+                  <>
+                    <Separator />
+                    <div className="p-3 border rounded-lg bg-yellow-50 border-yellow-200">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                        <p className="text-sm text-yellow-800">
+                          {isWarrantyExpired(equipment.warranty_date) 
+                            ? "ประกันหมดอายุแล้ว" 
+                            : "ประกันจะหมดอายุในอีก 30 วัน"
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -436,37 +453,37 @@ export default function EquipmentDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
+                  <UserCheck className="w-5 h-5" />
                   การมอบหมาย
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">แผนก</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Building className="w-4 h-4 text-muted-foreground" />
-                      <p className="text-sm">
-                        {equipment.department_name ? `${equipment.department_name} (${equipment.department_code})` : "-"}
-                      </p>
-                    </div>
+                    <Label className="text-sm font-medium text-muted-foreground">ผู้รับผิดชอบ</Label>
+                    <p className="text-sm flex items-center gap-2">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      {equipment.current_user_name || 'ยังไม่ได้มอบหมาย'}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">ผู้รับผิดชอบ</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <p className="text-sm">
-                        {equipment.current_user_name ? `${equipment.current_user_name} (${equipment.current_user_role})` : "-"}
-                      </p>
-                    </div>
+                    <Label className="text-sm font-medium text-muted-foreground">แผนก</Label>
+                    <p className="text-sm flex items-center gap-2">
+                      <Building className="w-4 h-4 text-muted-foreground" />
+                      {equipment.department_name ? 
+                        `${equipment.department_name} (${equipment.department_code})` : 
+                        'ยังไม่ได้กำหนด'
+                      }
+                    </p>
                   </div>
                 </div>
+                <Separator />
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">สถานที่ตั้ง</Label>
-                  <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <p className="text-sm">{equipment.location || "-"}</p>
-                  </div>
+                    {equipment.location || 'ยังไม่ได้กำหนด'}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -476,8 +493,8 @@ export default function EquipmentDetail() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Package className="w-5 h-5" />
-                    ข้อมูลจำเพาะ (คอมพิวเตอร์)
+                    <Shield className="w-5 h-5" />
+                    สเปคคอมพิวเตอร์
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -496,7 +513,7 @@ export default function EquipmentDetail() {
                     )}
                     {equipment.storage && (
                       <div>
-                        <Label className="text-sm font-medium text-muted-foreground">พื้นที่จัดเก็บ</Label>
+                        <Label className="text-sm font-medium text-muted-foreground">Storage</Label>
                         <p className="text-sm">{equipment.storage}</p>
                       </div>
                     )}
@@ -505,7 +522,7 @@ export default function EquipmentDetail() {
               </Card>
             )}
 
-            {/* History Section */}
+            {/* History */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -525,55 +542,59 @@ export default function EquipmentDetail() {
                   <TabsContent value="all" className="space-y-4">
                     {historyLoading ? (
                       <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                         <span className="ml-2">กำลังโหลดประวัติ...</span>
                       </div>
                     ) : history.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        <History className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                        <p>ไม่พบประวัติการแก้ไข</p>
-                        <p className="text-sm">ประวัติจะปรากฏเมื่อมีการแก้ไขข้อมูลครุภัณฑ์</p>
+                        <History className="w-12 h-12 mx-auto mb-2 text-muted-foreground/50" />
+                        <p>ยังไม่มีประวัติการแก้ไข</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {history.map((item, index) => (
-                          <div key={item.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border">
-                            <div className="flex-shrink-0 mt-1">
-                              {getHistoryActionIcon(item.action_type)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                        {history.map((item) => (
+                          <div key={item.id} className="p-3 border rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {getHistoryActionIcon(item.action_type)}
                                 {getHistoryActionBadge(item.action_type)}
-                                <span className="text-xs text-muted-foreground">
-                                  โดย {item.changed_by_name || 'ระบบ'} 
-                                  {item.changed_by_role && ` (${item.changed_by_role})`}
-                                </span>
-                                <span className="text-xs text-muted-foreground ml-auto">
-                                  {formatDateTime(item.created_at)}
-                                </span>
                               </div>
-                              {item.field_name && item.field_name !== 'general' && (
-                                <div className="text-sm">
-                                  <span className="text-muted-foreground">เปลี่ยน</span>{' '}
-                                  <span className="font-medium">
-                                    {EquipmentService.getFieldDisplayName(item.field_name)}
-                                  </span>{' '}
-                                  <span className="text-muted-foreground">จาก</span>{' '}
-                                  <span className="font-mono text-sm bg-background px-1 rounded">
-                                    {EquipmentService.formatValueForDisplay(item.field_name, item.old_value || '')}
-                                  </span>{' '}
-                                  <span className="text-muted-foreground">เป็น</span>{' '}
-                                  <span className="font-mono text-sm bg-background px-1 rounded">
-                                    {EquipmentService.formatValueForDisplay(item.field_name, item.new_value || '')}
-                                  </span>
-                                </div>
-                              )}
-                              {item.change_reason && (
-                                <div className="text-sm text-muted-foreground mt-1">
-                                  <span className="font-medium">เหตุผล:</span> {item.change_reason}
-                                </div>
-                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {formatDateTime(item.created_at)}
+                              </span>
                             </div>
+                            {item.field_name && (
+                              <div className="text-sm">
+                                <span className="font-medium">ฟิลด์:</span> {EquipmentService.getFieldDisplayName(item.field_name)}
+                              </div>
+                            )}
+                            {(item.old_value || item.new_value) && (
+                              <div className="text-sm mt-1">
+                                <span className="font-medium">การเปลี่ยนแปลง:</span>
+                                <div className="mt-1 space-y-1">
+                                  {item.old_value && (
+                                    <div className="text-red-600">
+                                      <span className="font-medium">เดิม:</span> {EquipmentService.formatValueForDisplay(item.field_name || '', item.old_value)}
+                                    </div>
+                                  )}
+                                  {item.new_value && (
+                                    <div className="text-green-600">
+                                      <span className="font-medium">ใหม่:</span> {EquipmentService.formatValueForDisplay(item.field_name || '', item.new_value)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            {item.change_reason && (
+                              <div className="text-sm mt-2">
+                                <span className="font-medium">เหตุผล:</span> {item.change_reason}
+                              </div>
+                            )}
+                            {item.changed_by_name && (
+                              <div className="text-sm mt-2 text-muted-foreground">
+                                <span className="font-medium">แก้ไขโดย:</span> {item.changed_by_name} ({item.changed_by_role})
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -581,158 +602,105 @@ export default function EquipmentDetail() {
                   </TabsContent>
                   
                   <TabsContent value="create" className="space-y-4">
-                    {historyLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <span className="ml-2">กำลังโหลดประวัติ...</span>
-                      </div>
-                    ) : history.filter(item => item.action_type === 'create').length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                        <p>ไม่พบประวัติการสร้าง</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {history.filter(item => item.action_type === 'create').map(item => (
-                          <div key={item.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                            <div className="flex-shrink-0 mt-1">
-                              <Package className="w-4 h-4 text-green-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="default" className="bg-green-50 text-green-700 border-green-200">
-                                  สร้างครุภัณฑ์
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  โดย {item.changed_by_name || 'ระบบ'} 
-                                  {item.changed_by_role && ` (${item.changed_by_role})`}
-                                </span>
-                                <span className="text-xs text-muted-foreground ml-auto">
-                                  {formatDateTime(item.created_at)}
-                                </span>
-                              </div>
-                              <div className="text-sm text-green-700">
-                                ครุภัณฑ์ถูกสร้างขึ้นในระบบ
-                              </div>
-                            </div>
+                    {history.filter(item => item.action_type === 'create').map((item) => (
+                      <div key={item.id} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {getHistoryActionIcon(item.action_type)}
+                            {getHistoryActionBadge(item.action_type)}
                           </div>
-                        ))}
+                          <span className="text-xs text-muted-foreground">
+                            {formatDateTime(item.created_at)}
+                          </span>
+                        </div>
+                        {item.changed_by_name && (
+                          <div className="text-sm text-muted-foreground">
+                            <span className="font-medium">สร้างโดย:</span> {item.changed_by_name} ({item.changed_by_role})
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </TabsContent>
                   
                   <TabsContent value="update" className="space-y-4">
-                    {historyLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <span className="ml-2">กำลังโหลดประวัติ...</span>
-                      </div>
-                    ) : history.filter(item => item.action_type === 'update').length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Edit className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                        <p>ไม่พบประวัติการแก้ไข</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {history.filter(item => item.action_type === 'update').map(item => (
-                          <div key={item.id} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <div className="flex-shrink-0 mt-1">
-                              <Edit className="w-4 h-4 text-blue-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  แก้ไขข้อมูล
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  โดย {item.changed_by_name || 'ระบบ'} 
-                                  {item.changed_by_role && ` (${item.changed_by_role})`}
-                                </span>
-                                <span className="text-xs text-muted-foreground ml-auto">
-                                  {formatDateTime(item.created_at)}
-                                </span>
-                              </div>
-                              {item.field_name && item.field_name !== 'general' && (
-                                <div className="text-sm">
-                                  <span className="text-muted-foreground">เปลี่ยน</span>{' '}
-                                  <span className="font-medium">
-                                    {EquipmentService.getFieldDisplayName(item.field_name)}
-                                  </span>{' '}
-                                  <span className="text-muted-foreground">จาก</span>{' '}
-                                  <span className="font-mono text-sm bg-background px-1 rounded">
-                                    {EquipmentService.formatValueForDisplay(item.field_name, item.old_value || '')}
-                                  </span>{' '}
-                                  <span className="text-muted-foreground">เป็น</span>{' '}
-                                  <span className="font-mono text-sm bg-background px-1 rounded">
-                                    {EquipmentService.formatValueForDisplay(item.field_name, item.new_value || '')}
-                                  </span>
+                    {history.filter(item => item.action_type === 'update').map((item) => (
+                      <div key={item.id} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {getHistoryActionIcon(item.action_type)}
+                            {getHistoryActionBadge(item.action_type)}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDateTime(item.created_at)}
+                          </span>
+                        </div>
+                        {item.field_name && (
+                          <div className="text-sm">
+                            <span className="font-medium">ฟิลด์:</span> {EquipmentService.getFieldDisplayName(item.field_name)}
+                          </div>
+                        )}
+                        {(item.old_value || item.new_value) && (
+                          <div className="text-sm mt-1">
+                            <span className="font-medium">การเปลี่ยนแปลง:</span>
+                            <div className="mt-1 space-y-1">
+                              {item.old_value && (
+                                <div className="text-red-600">
+                                  <span className="font-medium">เดิม:</span> {EquipmentService.formatValueForDisplay(item.field_name || '', item.old_value)}
                                 </div>
                               )}
-                              {item.change_reason && (
-                                <div className="text-sm text-muted-foreground mt-1">
-                                  <span className="font-medium">เหตุผล:</span> {item.change_reason}
+                              {item.new_value && (
+                                <div className="text-green-600">
+                                  <span className="font-medium">ใหม่:</span> {EquipmentService.formatValueForDisplay(item.field_name || '', item.new_value)}
                                 </div>
                               )}
                             </div>
                           </div>
-                        ))}
+                        )}
+                        {item.changed_by_name && (
+                          <div className="text-sm mt-2 text-muted-foreground">
+                            <span className="font-medium">แก้ไขโดย:</span> {item.changed_by_name} ({item.changed_by_role})
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </TabsContent>
                   
                   <TabsContent value="status" className="space-y-4">
-                    {historyLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <span className="ml-2">กำลังโหลดประวัติ...</span>
-                      </div>
-                    ) : history.filter(item => item.action_type === 'status_change').length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                        <p>ไม่พบประวัติการเปลี่ยนสถานะ</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {history.filter(item => item.action_type === 'status_change').map(item => (
-                          <div key={item.id} className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                            <div className="flex-shrink-0 mt-1">
-                              <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                                  เปลี่ยนสถานะ
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  โดย {item.changed_by_name || 'ระบบ'} 
-                                  {item.changed_by_role && ` (${item.changed_by_role})`}
-                                </span>
-                                <span className="text-xs text-muted-foreground ml-auto">
-                                  {formatDateTime(item.created_at)}
-                                </span>
-                              </div>
-                              {item.field_name && (
-                                <div className="text-sm">
-                                  <span className="text-muted-foreground">เปลี่ยนสถานะจาก</span>{' '}
-                                  <span className="font-mono text-sm bg-background px-1 rounded">
-                                    {EquipmentService.formatValueForDisplay(item.field_name, item.old_value || '')}
-                                  </span>{' '}
-                                  <span className="text-muted-foreground">เป็น</span>{' '}
-                                  <span className="font-mono text-sm bg-background px-1 rounded">
-                                    {EquipmentService.formatValueForDisplay(item.field_name, item.new_value || '')}
-                                  </span>
+                    {history.filter(item => item.action_type === 'status_change').map((item) => (
+                      <div key={item.id} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {getHistoryActionIcon(item.action_type)}
+                            {getHistoryActionBadge(item.action_type)}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDateTime(item.created_at)}
+                          </span>
+                        </div>
+                        {(item.old_value || item.new_value) && (
+                          <div className="text-sm mt-1">
+                            <span className="font-medium">การเปลี่ยนแปลงสถานะ:</span>
+                            <div className="mt-1 space-y-1">
+                              {item.old_value && (
+                                <div className="text-red-600">
+                                  <span className="font-medium">เดิม:</span> {EquipmentService.formatValueForDisplay('status', item.old_value)}
                                 </div>
                               )}
-                              {item.change_reason && (
-                                <div className="text-sm text-muted-foreground mt-1">
-                                  <span className="font-medium">เหตุผล:</span> {item.change_reason}
+                              {item.new_value && (
+                                <div className="text-green-600">
+                                  <span className="font-medium">ใหม่:</span> {EquipmentService.formatValueForDisplay('status', item.new_value)}
                                 </div>
                               )}
                             </div>
                           </div>
-                        ))}
+                        )}
+                        {item.changed_by_name && (
+                          <div className="text-sm mt-2 text-muted-foreground">
+                            <span className="font-medium">แก้ไขโดย:</span> {item.changed_by_name} ({item.changed_by_role})
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </TabsContent>
                 </Tabs>
               </CardContent>
@@ -741,55 +709,54 @@ export default function EquipmentDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Warranty Alert */}
-            {equipment.warranty_date && (
-              <Card className={isWarrantyExpired(equipment.warranty_date) ? "border-red-200 bg-red-50" : 
-                              isWarrantyExpiringSoon(equipment.warranty_date) ? "border-yellow-200 bg-yellow-50" : ""}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Shield className="w-4 h-4" />
-                    สถานะประกัน
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isWarrantyExpired(equipment.warranty_date) ? (
-                    <div className="text-red-700">
-                      <p className="text-sm font-medium">หมดประกันแล้ว</p>
-                      <p className="text-xs">หมดประกันเมื่อ: {formatDate(equipment.warranty_date)}</p>
-                    </div>
-                  ) : isWarrantyExpiringSoon(equipment.warranty_date) ? (
-                    <div className="text-yellow-700">
-                      <p className="text-sm font-medium">ประกันใกล้หมด</p>
-                      <p className="text-xs">หมดประกันเมื่อ: {formatDate(equipment.warranty_date)}</p>
-                    </div>
-                  ) : (
-                    <div className="text-green-700">
-                      <p className="text-sm font-medium">ประกันยังไม่หมด</p>
-                      <p className="text-xs">หมดประกันเมื่อ: {formatDate(equipment.warranty_date)}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* System Information */}
+            {/* QR Code */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">ข้อมูลระบบ</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <QrCode className="w-5 h-5" />
+                  QR Code
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground">สร้างเมื่อ</Label>
-                  <p className="text-xs">{formatDate(equipment.created_at)}</p>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground">อัปเดตล่าสุด</Label>
-                  <p className="text-xs">{formatDate(equipment.updated_at)}</p>
-                </div>
+              <CardContent className="flex justify-center">
+                <QRCodeComponent 
+                  value={equipment.equipment_code}
+                  size={200}
+                  title="รหัสครุภัณฑ์"
+                />
               </CardContent>
             </Card>
 
-            
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>การดำเนินการ</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate(`/equipment/edit/${equipment.id}`)}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  แก้ไขข้อมูล
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    // Copy equipment code to clipboard
+                    navigator.clipboard.writeText(equipment.equipment_code)
+                    toast({
+                      title: "คัดลอกแล้ว",
+                      description: "รหัสครุภัณฑ์ถูกคัดลอกไปยังคลิปบอร์ดแล้ว",
+                    })
+                  }}
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  คัดลอกรหัส
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

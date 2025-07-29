@@ -193,6 +193,31 @@ export interface WarrantyAlert {
   created_at: string;
 }
 
+export interface EquipmentHistory {
+  id: string;
+  equipment_id: string;
+  action_type: string;
+  field_name?: string;
+  old_value?: string;
+  new_value?: string;
+  change_reason?: string;
+  changed_by?: string;
+  created_at: string;
+}
+
+export interface EquipmentCategory {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ========================================
 // VIEWS
 // ========================================
@@ -220,6 +245,21 @@ export interface RecentActivity extends EquipmentActivity {
   user_username?: string;
 }
 
+export interface EquipmentHistoryWithUsers {
+  id: string;
+  equipment_id: string;
+  action_type: string;
+  field_name?: string;
+  old_value?: string;
+  new_value?: string;
+  change_reason?: string;
+  created_at: string;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  user_role?: string;
+}
+
 // ========================================
 // INSERT/UPDATE TYPES
 // ========================================
@@ -236,6 +276,9 @@ export type EquipmentUpdate = Partial<Omit<Equipment, 'id' | 'equipment_code' | 
 export type EquipmentActivityInsert = Omit<EquipmentActivity, 'id' | 'created_at'>;
 export type BorrowRecordInsert = Omit<BorrowRecord, 'id' | 'created_at' | 'updated_at'>;
 export type MaintenanceRecordInsert = Omit<MaintenanceRecord, 'id' | 'created_at' | 'updated_at'>;
+
+export type EquipmentCategoryInsert = Omit<EquipmentCategory, 'id' | 'created_at' | 'updated_at'>;
+export type EquipmentCategoryUpdate = Partial<Omit<EquipmentCategory, 'id' | 'created_at' | 'updated_at'>>;
 
 // ========================================
 // API RESPONSE TYPES

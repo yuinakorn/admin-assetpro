@@ -1,23 +1,42 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts"
-
-const statusData = [
-  { name: "ใช้งานปกติ", value: 145, color: "hsl(var(--success))" },
-  { name: "ชำรุด", value: 12, color: "hsl(var(--destructive))" },
-  { name: "ซ่อมบำรุง", value: 8, color: "hsl(var(--warning))" },
-  { name: "จำหน่ายแล้ว", value: 5, color: "hsl(var(--muted-foreground))" },
-]
-
-const monthlyData = [
-  { month: "ม.ค.", total: 142, damaged: 8, repaired: 5 },
-  { month: "ก.พ.", total: 145, damaged: 12, repaired: 6 },
-  { month: "มี.ค.", total: 148, damaged: 10, repaired: 8 },
-  { month: "เม.ย.", total: 150, damaged: 15, repaired: 7 },
-  { month: "พ.ค.", total: 155, damaged: 18, repaired: 12 },
-  { month: "มิ.ย.", total: 170, damaged: 12, repaired: 9 },
-]
+import { useEffect, useState } from "react"
+import { DashboardService, EquipmentStatusData, MonthlyTrendData } from "@/services/dashboardService"
 
 export function EquipmentStatusChart() {
+  const [statusData, setStatusData] = useState<EquipmentStatusData[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await DashboardService.getEquipmentStatusData()
+        setStatusData(data)
+      } catch (error) {
+        console.error('Error fetching status data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">สถานะครุภัณฑ์</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[250px] flex items-center justify-center">
+            <div className="text-muted-foreground">กำลังโหลด...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -31,14 +50,14 @@ export function EquipmentStatusChart() {
               cx="50%"
               cy="50%"
               outerRadius={80}
-              dataKey="value"
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              dataKey="count"
+              label={({ status, count }) => `${status} ${count}`}
             >
               {statusData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip formatter={(value, name) => [value, 'จำนวน']} />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>
@@ -47,6 +66,39 @@ export function EquipmentStatusChart() {
 }
 
 export function MonthlyTrendChart() {
+  const [monthlyData, setMonthlyData] = useState<MonthlyTrendData[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await DashboardService.getMonthlyTrendData()
+        setMonthlyData(data)
+      } catch (error) {
+        console.error('Error fetching monthly data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">แนวโน้มครุภัณฑ์รายเดือน</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="text-muted-foreground">กำลังโหลด...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="col-span-2">
       <CardHeader>
