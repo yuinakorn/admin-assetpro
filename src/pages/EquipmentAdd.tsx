@@ -264,16 +264,14 @@ export default function EquipmentAdd() {
                         </SelectTrigger>
                         <SelectContent>
                           {categoriesLoading ? (
-                            <SelectItem value="" disabled>
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                กำลังโหลด...
-                              </div>
-                            </SelectItem>
+                            <div className="flex items-center justify-center gap-2 py-2 px-3">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span className="text-sm text-muted-foreground">กำลังโหลด...</span>
+                            </div>
                           ) : categories.length === 0 ? (
-                            <SelectItem value="" disabled>
-                              ไม่พบประเภทครุภัณฑ์
-                            </SelectItem>
+                            <div className="flex items-center justify-center py-2 px-3">
+                              <span className="text-sm text-muted-foreground">ไม่พบประเภทครุภัณฑ์</span>
+                            </div>
                           ) : (
                             categories.map((category) => (
                               <SelectItem 
@@ -399,18 +397,24 @@ export default function EquipmentAdd() {
                         </div>
                       ) : (
                         <Select 
-                          value={formData.department_id} 
-                          onValueChange={(value) => setFormData({ ...formData, department_id: value })}
+                          value={formData.department_id || undefined} 
+                          onValueChange={(value) => setFormData({ ...formData, department_id: value || "" })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="เลือกแผนก (ไม่บังคับ)" />
                           </SelectTrigger>
                           <SelectContent>
-                            {departments.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.id}>
-                                {dept.name} ({dept.code})
-                              </SelectItem>
-                            ))}
+                            {departments.length === 0 ? (
+                              <div className="flex items-center justify-center py-2 px-3">
+                                <span className="text-sm text-muted-foreground">ไม่พบแผนก</span>
+                              </div>
+                            ) : (
+                              departments.map((dept) => (
+                                <SelectItem key={dept.id} value={dept.id}>
+                                  {dept.name} ({dept.code})
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       )}
@@ -424,18 +428,24 @@ export default function EquipmentAdd() {
                         </div>
                       ) : (
                         <Select 
-                          value={formData.current_user_id} 
-                          onValueChange={(value) => setFormData({ ...formData, current_user_id: value })}
+                          value={formData.current_user_id || undefined} 
+                          onValueChange={(value) => setFormData({ ...formData, current_user_id: value || "" })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="เลือกผู้รับผิดชอบ (ไม่บังคับ)" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                {user.name} ({user.role})
-                              </SelectItem>
-                            ))}
+                            {users.length === 0 ? (
+                              <div className="flex items-center justify-center py-2 px-3">
+                                <span className="text-sm text-muted-foreground">ไม่พบผู้ใช้งาน</span>
+                              </div>
+                            ) : (
+                              users.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.name} ({user.role})
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       )}
