@@ -10,6 +10,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
 import { EquipmentCategoryService } from "@/services/equipmentCategoryService"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useToast } from "@/hooks/use-toast"
 
 export default function EquipmentAdd() {
@@ -27,6 +28,7 @@ export default function EquipmentAdd() {
     purchase_price: "",
     department_id: "",
     current_user_id: "",
+    current_employee_name: "",
     status: "normal" as "normal" | "maintenance" | "damaged" | "disposed" | "borrowed",
     location: ""
   })
@@ -38,6 +40,7 @@ export default function EquipmentAdd() {
   const [departmentsLoading, setDepartmentsLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(true)
   const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [createdEquipmentId, setCreatedEquipmentId] = useState<string | null>(null)
 
   // Load departments, users, and categories on component mount
   useEffect(() => {
@@ -185,18 +188,23 @@ export default function EquipmentAdd() {
         purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
         department_id: formData.department_id || null,
         current_user_id: formData.current_user_id || null,
+        current_employee_name: formData.current_employee_name || null,
         status: formData.status,
         location: formData.location
       }
 
-      await EquipmentService.createEquipment(equipmentData)
+      const createdEquipment = await EquipmentService.createEquipment(equipmentData)
+      
+      // Set the created equipment ID for image upload
+      setCreatedEquipmentId(createdEquipment.id)
       
       toast({
         title: "เพิ่มครุภัณฑ์สำเร็จ",
-        description: "เพิ่มครุภัณฑ์ใหม่เรียบร้อยแล้ว",
+        description: "เพิ่มครุภัณฑ์ใหม่เรียบร้อยแล้ว คุณสามารถอัพโหลดรูปภาพได้",
       })
       
-      navigate("/equipment/list")
+      // Don't navigate immediately, let user upload images first
+      // navigate("/equipment/list")
     } catch (error) {
       console.error('Error creating equipment:', error)
       toast({
@@ -450,8 +458,39 @@ export default function EquipmentAdd() {
                       )}
                     </div>
                   </div>
+                  <div>
+                    <Label htmlFor="current_employee_name">ชื่อเจ้าของเครื่อง</Label>
+                    <Input 
+                      id="current_employee_name" 
+                      placeholder="ชื่อเจ้าของเครื่องปัจจุบัน"
+                      value={formData.current_employee_name}
+                      onChange={(e) => setFormData({ ...formData, current_employee_name: e.target.value })}
+                    />
+                  </div>
                 </CardContent>
               </Card>
+
+              {/* Image Upload */}
+              {createdEquipmentId && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>รูปภาพครุภัณฑ์</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ImageUpload 
+                      equipmentId={createdEquipmentId}
+                      maxImages={10}
+                      onImagesUploaded={(images) => {
+                        console.log('Images uploaded:', images)
+                        toast({
+                          title: "อัพโหลดรูปภาพสำเร็จ",
+                          description: `อัพโหลดรูปภาพ ${images.length} รูปเรียบร้อยแล้ว`
+                        })
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Sidebar */}
@@ -487,18 +526,28 @@ export default function EquipmentAdd() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="space-y-3">
-                    <Button 
-                      type="submit" 
-                      className="w-full gap-2" 
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
-                      เพิ่มครุภัณฑ์
-                    </Button>
+                    {!createdEquipmentId ? (
+                      <Button 
+                        type="submit" 
+                        className="w-full gap-2" 
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
+                        )}
+                        เพิ่มครุภัณฑ์
+                      </Button>
+                    ) : (
+                      <Button 
+                        type="button" 
+                        className="w-full gap-2"
+                        onClick={() => navigate("/equipment/list")}
+                      >
+                        เสร็จสิ้น
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       className="w-full"

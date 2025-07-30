@@ -86,6 +86,7 @@ export interface Equipment {
   department_id?: string;
   location?: string;
   current_user_id?: string;
+  current_employee_name?: string; // ชื่อเจ้าของเครื่องปัจจุบัน
   
   // Computer-specific specifications
   cpu?: string;
@@ -115,11 +116,14 @@ export interface EquipmentImage {
   id: string;
   equipment_id: string;
   image_url: string;
-  image_type?: string; // 'main', 'detail', 'damage', etc.
-  file_name?: string;
+  image_name?: string;
   file_size?: number;
+  mime_type?: string;
+  uploaded_at: string;
   uploaded_by?: string;
+  is_primary: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface EquipmentActivity {
@@ -317,6 +321,7 @@ export interface EquipmentFormData {
   department_id?: string;
   location?: string;
   current_user_id?: string;
+  current_employee_name?: string;
   cpu?: string;
   ram?: string;
   storage?: string;
@@ -327,6 +332,7 @@ export interface EquipmentFormData {
   mac_address?: string;
   hostname?: string;
   notes?: string;
+  images?: File[];
 }
 
 export interface BorrowFormData {
