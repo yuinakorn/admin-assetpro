@@ -105,12 +105,77 @@ export class EquipmentService {
     }
   }
 
+  // Generate unique equipment code
+  static async generateEquipmentCode(): Promise<string> {
+    try {
+      // Get the latest equipment code to determine the next number
+      const { data, error } = await supabase
+        .from('equipment')
+        .select('equipment_code')
+        .order('equipment_code', { ascending: false })
+        .limit(1)
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.warn('Error fetching equipment codes:', error)
+      }
+
+      let nextNumber = 1
+      if (data && data.length > 0 && data[0].equipment_code) {
+        // Extract number from equipment code (e.g., "EQ001" -> 1)
+        const match = data[0].equipment_code.match(/^EQ(\d+)$/)
+        if (match) {
+          nextNumber = parseInt(match[1], 10) + 1
+        }
+      }
+
+      // Format with leading zeros (e.g., 1 -> "EQ001")
+      return `EQ${nextNumber.toString().padStart(3, '0')}`
+    } catch (error) {
+      console.error('Error generating equipment code:', error)
+      // Fallback: use timestamp-based code
+      return `EQ${Date.now().toString().slice(-6)}`
+    }
+  }
+
   // Create new equipment
   static async createEquipment(equipment: EquipmentInsert): Promise<Equipment> {
     try {
+      // Generate equipment code if not provided
+      const equipmentCode = await this.generateEquipmentCode()
+      
+      // Get current user ID safely
+      const currentUser = (await supabase.auth.getUser()).data.user
+      let createdBy = null
+      let updatedBy = null
+      
+      // Only set created_by/updated_by if we can verify the user exists in local DB
+      if (currentUser?.id) {
+        try {
+          const { data: userExists } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', currentUser.id)
+            .single()
+          
+          if (userExists) {
+            createdBy = currentUser.id
+            updatedBy = currentUser.id
+          }
+        } catch (error) {
+          console.warn('User not found in local database, proceeding without created_by/updated_by')
+        }
+      }
+      
+      const equipmentData = {
+        ...equipment,
+        equipment_code: equipmentCode,
+        created_by: createdBy,
+        updated_by: updatedBy,
+      }
+
       const { data, error } = await supabase
         .from('equipment')
-        .insert(equipment)
+        .insert(equipmentData)
         .select()
         .single()
 
@@ -767,4 +832,4 @@ export class EquipmentService {
         return type
     }
   }
-} 
+}

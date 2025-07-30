@@ -47,6 +47,22 @@ export interface WarrantyWarningData {
   status: 'critical' | 'warning' | 'info'
 }
 
+// Equipment type statistics interface
+export interface EquipmentTypeData {
+  type: string
+  type_label: string
+  count: number
+  color: string
+}
+
+// Equipment by department interface
+export interface EquipmentDepartmentData {
+  department: string
+  department_code: string
+  count: number
+  color: string
+}
+
 export class DashboardService {
   // Get dashboard statistics
   static async getDashboardStats(): Promise<DashboardStats> {
@@ -325,6 +341,90 @@ export class DashboardService {
       })
     } catch (error) {
       console.error('Error getting warranty warnings:', error)
+      return []
+    }
+  }
+
+  // Get equipment statistics by type for donut chart
+  static async getEquipmentByType(): Promise<EquipmentTypeData[]> {
+    try {
+      const { data, error } = await supabase
+        .from('equipment')
+        .select('type')
+        .eq('status', 'normal') // Only count active equipment
+
+      if (error) throw error
+
+      // Count by type
+      const typeCounts: Record<string, number> = {}
+      data.forEach(item => {
+        typeCounts[item.type] = (typeCounts[item.type] || 0) + 1
+      })
+
+      // Type labels and colors
+      const typeConfig = {
+        computer: { label: 'คอมพิวเตอร์', color: '#3B82F6' },
+        laptop: { label: 'โน้ตบุ๊ค', color: '#10B981' },
+        monitor: { label: 'จอภาพ', color: '#8B5CF6' },
+        printer: { label: 'เครื่องพิมพ์', color: '#F59E0B' },
+        ups: { label: 'UPS', color: '#EF4444' },
+        network_device: { label: 'อุปกรณ์เครือข่าย', color: '#6B7280' }
+      }
+
+      return Object.entries(typeCounts).map(([type, count]) => ({
+        type,
+        type_label: typeConfig[type as keyof typeof typeConfig]?.label || type,
+        count,
+        color: typeConfig[type as keyof typeof typeConfig]?.color || '#94A3B8'
+      }))
+
+    } catch (error) {
+      console.error('Error fetching equipment by type:', error)
+      return []
+    }
+  }
+
+  // Get equipment statistics by department for bar chart
+  static async getEquipmentByDepartment(): Promise<EquipmentDepartmentData[]> {
+    try {
+      const { data, error } = await supabase
+        .from('equipment')
+        .select(`
+          department_id,
+          departments!inner(name, code)
+        `)
+
+      if (error) throw error
+
+      // Count by department
+      const deptCounts: Record<string, { name: string; code: string; count: number }> = {}
+      
+      data.forEach(item => {
+        if (item.departments) {
+          const deptKey = item.departments.name
+          if (!deptCounts[deptKey]) {
+            deptCounts[deptKey] = {
+              name: item.departments.name,
+              code: item.departments.code,
+              count: 0
+            }
+          }
+          deptCounts[deptKey].count++
+        }
+      })
+
+      // Generate colors
+      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#6B7280', '#EC4899', '#14B8A6']
+
+      return Object.values(deptCounts).map((dept, index) => ({
+        department: dept.name,
+        department_code: dept.code,
+        count: dept.count,
+        color: colors[index % colors.length]
+      }))
+
+    } catch (error) {
+      console.error('Error fetching equipment by department:', error)
       return []
     }
   }

@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
 import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useAuth } from "@/contexts/AuthContext"
 
 type SortField = 'equipment_code' | 'name' | 'type' | 'department_name' | 'status' | 'current_user_name'
 type SortDirection = 'asc' | 'desc'
@@ -43,6 +44,7 @@ export default function EquipmentList() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const permissions = usePermissions()
+  const { user } = useAuth()
 
   useEffect(() => {
     loadEquipment()
@@ -67,19 +69,40 @@ export default function EquipmentList() {
 
   const handleDelete = async (id: string) => {
     try {
+      console.log('Attempting to delete equipment:', id)
+      console.log('Current user role:', user?.user_metadata?.role)
+      
       await EquipmentService.deleteEquipment(id)
       toast({
         title: "ลบครุภัณฑ์สำเร็จ",
         description: "ครุภัณฑ์ถูกลบออกจากระบบแล้ว",
       })
       loadEquipment()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting equipment:', error)
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถลบครุภัณฑ์ได้",
-        variant: "destructive"
-      })
+      
+      const errorMessage = error instanceof Error ? error.message : 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+      
+      // Check if it's a permission error
+      if (errorMessage.includes('permission') || errorMessage.includes('policy')) {
+        toast({
+          title: "ไม่มีสิทธิ์ลบครุภัณฑ์",
+          description: "เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถลบครุภัณฑ์ได้",
+          variant: "destructive"
+        })
+      } else if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
+        toast({
+          title: "ไม่สามารถลบครุภัณฑ์ได้",
+          description: "ครุภัณฑ์นี้ถูกใช้งานอยู่ในระบบ กรุณาลบข้อมูลที่เกี่ยวข้องก่อน",
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "เกิดข้อผิดพลาด",
+          description: `ไม่สามารถลบครุภัณฑ์ได้: ${errorMessage}`,
+          variant: "destructive"
+        })
+      }
     }
   }
 

@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useEffect, useState } from "react"
 import { DashboardService, DashboardStats } from "@/services/dashboardService"
+import { EquipmentTypeChart, EquipmentDepartmentChart } from "@/components/dashboard/EquipmentChart"
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -252,6 +253,12 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <EquipmentTypeChart />
+          <EquipmentDepartmentChart />
         </div>
 
         {/* Recent Activity Placeholder */}
