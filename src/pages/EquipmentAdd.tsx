@@ -310,13 +310,12 @@ export default function EquipmentAdd() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="serial_number">เลขประจำเครื่อง *</Label>
+                      <Label htmlFor="serial_number">เลขครุภัณฑ์</Label>
                       <Input 
                         id="serial_number" 
-                        placeholder="เลขประจำเครื่อง"
+                        placeholder="เลขครุภัณฑ์ประจำเครื่อง"
                         value={formData.serial_number}
                         onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                        required
                       />
                     </div>
                     <div>

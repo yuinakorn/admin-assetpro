@@ -81,28 +81,16 @@ export default function EquipmentList() {
     } catch (error: unknown) {
       console.error('Error deleting equipment:', error)
       
-      const errorMessage = error instanceof Error ? error.message : 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ'
-      
-      // Check if it's a permission error
-      if (errorMessage.includes('permission') || errorMessage.includes('policy')) {
-        toast({
-          title: "ไม่มีสิทธิ์ลบครุภัณฑ์",
-          description: "เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถลบครุภัณฑ์ได้",
-          variant: "destructive"
-        })
-      } else if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
-        toast({
-          title: "ไม่สามารถลบครุภัณฑ์ได้",
-          description: "ครุภัณฑ์นี้ถูกใช้งานอยู่ในระบบ กรุณาลบข้อมูลที่เกี่ยวข้องก่อน",
-          variant: "destructive"
-        })
-      } else {
-        toast({
-          title: "เกิดข้อผิดพลาด",
-          description: `ไม่สามารถลบครุภัณฑ์ได้: ${errorMessage}`,
-          variant: "destructive"
-        })
+      let errorMessage = 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+      if (error instanceof Error) {
+        errorMessage = error.message
       }
+      
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: errorMessage,
+        variant: "destructive"
+      })
     }
   }
 

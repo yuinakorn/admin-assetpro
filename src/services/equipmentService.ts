@@ -232,17 +232,143 @@ export class EquipmentService {
     }
   }
 
-  // Delete equipment (soft delete)
+  // Delete equipment safely (with all related data)
   static async deleteEquipment(id: string): Promise<void> {
     try {
-      const { error } = await supabase
+      console.log('Starting equipment deletion for ID:', id)
+      
+      // Try to use the RPC function first
+      try {
+        const { data, error } = await supabase.rpc('delete_equipment_safely', {
+          equipment_uuid: id
+        })
+
+        if (error) {
+          console.error('RPC function error:', error)
+          throw new Error(`RPC Error: ${error.message}`)
+        }
+
+        if (data === false) {
+          throw new Error('RPC function returned false')
+        }
+
+        console.log('Equipment deleted successfully using RPC function')
+        return
+      } catch (rpcError) {
+        console.warn('RPC function failed, falling back to manual deletion:', rpcError)
+        
+        // Fallback to manual deletion if RPC function doesn't exist or fails
+        await this.deleteEquipmentManually(id)
+        console.log('Equipment deleted successfully using manual method')
+        return
+      }
+    } catch (error) {
+      console.error('Error deleting equipment:', error)
+      
+      // Provide user-friendly error messages
+      if (error instanceof Error) {
+        if (error.message.includes('does not exist') || error.message.includes('not found')) {
+          throw new Error('ไม่พบครุภัณฑ์ที่ต้องการลบ')
+        } else if (error.message.includes('permission denied') || error.message.includes('policy')) {
+          throw new Error('ไม่มีสิทธิ์ในการลบครุภัณฑ์นี้')
+        } else if (error.message.includes('foreign key') || error.message.includes('constraint')) {
+          throw new Error('ไม่สามารถลบครุภัณฑ์ได้ เนื่องจากมีข้อมูลที่เกี่ยวข้องในระบบ')
+        } else {
+          throw new Error(`เกิดข้อผิดพลาด: ${error.message}`)
+        }
+      }
+      
+      throw new Error('ไม่สามารถลบครุภัณฑ์ได้ กรุณาติดต่อผู้ดูแลระบบ')
+    }
+  }
+
+  // Manual deletion method as fallback
+  private static async deleteEquipmentManually(id: string): Promise<void> {
+    try {
+      console.log('Starting manual deletion for equipment:', id)
+
+      // Delete related data in order (child tables first)
+      
+      // 1. Delete equipment history
+      const { error: historyError } = await supabase
+        .from('equipment_history')
+        .delete()
+        .eq('equipment_id', id)
+      
+      if (historyError) {
+        console.warn('Error deleting equipment history:', historyError)
+        // Continue anyway as this might not exist
+      }
+
+      // 2. Delete warranty alerts
+      const { error: warrantyError } = await supabase
+        .from('warranty_alerts')
+        .delete()
+        .eq('equipment_id', id)
+      
+      if (warrantyError) {
+        console.warn('Error deleting warranty alerts:', warrantyError)
+        // Continue anyway
+      }
+
+      // 3. Delete maintenance records
+      const { error: maintenanceError } = await supabase
+        .from('maintenance_records')
+        .delete()
+        .eq('equipment_id', id)
+      
+      if (maintenanceError) {
+        console.warn('Error deleting maintenance records:', maintenanceError)
+        // Continue anyway
+      }
+
+      // 4. Delete borrow records
+      const { error: borrowError } = await supabase
+        .from('borrow_records')
+        .delete()
+        .eq('equipment_id', id)
+      
+      if (borrowError) {
+        console.warn('Error deleting borrow records:', borrowError)
+        // Continue anyway
+      }
+
+      // 5. Delete equipment activities (if table exists)
+      const { error: activitiesError } = await supabase
+        .from('equipment_activities')
+        .delete()
+        .eq('equipment_id', id)
+      
+      if (activitiesError) {
+        console.warn('Error deleting equipment activities:', activitiesError)
+        // Continue anyway
+      }
+
+      // 6. Delete equipment images
+      const { error: imagesError } = await supabase
+        .from('equipment_images')
+        .delete()
+        .eq('equipment_id', id)
+      
+      if (imagesError) {
+        console.warn('Error deleting equipment images:', imagesError)
+        // Continue anyway
+      }
+
+      // 7. Finally delete the equipment
+      const { error: equipmentError } = await supabase
         .from('equipment')
         .delete()
         .eq('id', id)
 
-      if (error) throw error
+      if (equipmentError) {
+        console.error('Error deleting equipment:', equipmentError)
+        throw equipmentError
+      }
+
+      console.log('Manual deletion completed successfully')
     } catch (error) {
-      console.error('Error deleting equipment:', error)
+      console.error('Error in manual deletion:', error)
       throw error
     }
   }

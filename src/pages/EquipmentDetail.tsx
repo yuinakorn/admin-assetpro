@@ -141,9 +141,15 @@ export default function EquipmentDetail() {
       navigate("/equipment/list")
     } catch (error) {
       console.error("Error deleting equipment:", error)
+      
+      let errorMessage = "ไม่สามารถลบครุภัณฑ์ได้"
+      if (error instanceof Error) {
+        errorMessage = error.message
+      }
+      
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถลบครุภัณฑ์ได้",
+        description: errorMessage,
         variant: "destructive"
       })
     } finally {
