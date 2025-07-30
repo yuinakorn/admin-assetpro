@@ -530,7 +530,7 @@ export class EquipmentService {
           change_reason,
           created_at,
           changed_by,
-          users!inner(first_name, last_name, role)
+          users(first_name, last_name, role)
         `)
         .eq('equipment_id', equipmentId)
         .order('created_at', { ascending: false })
@@ -650,7 +650,7 @@ export class EquipmentService {
           change_reason,
           created_at,
           changed_by,
-          users!inner(first_name, last_name, role)
+          users(first_name, last_name, role)
         `)
         .order('created_at', { ascending: false })
         .limit(1000) // Limit to prevent performance issues

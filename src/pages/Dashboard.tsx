@@ -1,26 +1,22 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
   Monitor, 
   Users, 
   Building2, 
   Package, 
-  TrendingUp, 
   AlertTriangle,
   CheckCircle,
-  Clock,
-  Plus
+  Clock
 } from "lucide-react"
-import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useEffect, useState } from "react"
 import { DashboardService, DashboardStats } from "@/services/dashboardService"
 import { EquipmentTypeChart, EquipmentDepartmentChart } from "@/components/dashboard/EquipmentChart"
+import { RecentActivity } from "@/components/dashboard/RecentActivity"
 
 export default function Dashboard() {
-  const navigate = useNavigate()
   const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats>({
     total_equipment: 0,
@@ -31,6 +27,7 @@ export default function Dashboard() {
     borrowed_equipment: 0,
     total_users: 0,
     total_departments: 0,
+    total_equipment_types: 0,
     expiring_warranty: 0,
     expired_warranty: 0
   })
@@ -105,52 +102,6 @@ export default function Dashboard() {
             </Badge>
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              การดำเนินการด่วน
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center gap-2"
-                onClick={() => navigate("/equipment/add")}
-              >
-                <Plus className="w-6 h-6" />
-                <span>เพิ่มครุภัณฑ์</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center gap-2"
-                onClick={() => navigate("/equipment/list")}
-              >
-                <Monitor className="w-6 h-6" />
-                <span>ดูครุภัณฑ์</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center gap-2"
-                onClick={() => navigate("/users")}
-              >
-                <Users className="w-6 h-6" />
-                <span>จัดการผู้ใช้</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center gap-2"
-                onClick={() => navigate("/departments")}
-              >
-                <Building2 className="w-6 h-6" />
-                <span>จัดการแผนก</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -247,9 +198,9 @@ export default function Dashboard() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">6</div>
+              <div className="text-2xl font-bold">{stats.total_equipment_types}</div>
               <p className="text-xs text-muted-foreground">
-                ประเภทครุภัณฑ์
+                ประเภทครุภัณฑ์ที่มีอยู่
               </p>
             </CardContent>
           </Card>
@@ -261,17 +212,8 @@ export default function Dashboard() {
           <EquipmentDepartmentChart />
         </div>
 
-        {/* Recent Activity Placeholder */}
-        <Card>
-          <CardHeader>
-            <CardTitle>กิจกรรมล่าสุด</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              ยังไม่มีกิจกรรมล่าสุด
-            </div>
-          </CardContent>
-        </Card>
+        {/* Recent Activity Section */}
+        <RecentActivity />
       </div>
     </DashboardLayout>
   )

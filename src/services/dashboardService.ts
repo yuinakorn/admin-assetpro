@@ -10,6 +10,7 @@ export interface DashboardStats {
   borrowed_equipment: number
   total_users: number
   total_departments: number
+  total_equipment_types: number
   expiring_warranty: number
   expired_warranty: number
 }
@@ -70,7 +71,7 @@ export class DashboardService {
       // Get equipment data
       const { data: equipment, error: equipmentError } = await supabase
         .from('equipment')
-        .select('status, warranty_date')
+        .select('status, warranty_date, type')
 
       if (equipmentError) throw equipmentError
 
@@ -92,6 +93,10 @@ export class DashboardService {
         console.warn('Error counting departments:', departmentsError)
       }
 
+      // Get unique equipment types count
+      const uniqueTypes = new Set(equipment.map(item => item.type))
+      const totalEquipmentTypes = uniqueTypes.size
+
       const now = new Date()
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
       const sixtyDaysFromNow = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000)
@@ -105,6 +110,7 @@ export class DashboardService {
         borrowed_equipment: equipment.filter(item => item.status === 'borrowed').length,
         total_users: usersCount || 0,
         total_departments: departmentsCount || 0,
+        total_equipment_types: totalEquipmentTypes,
         expiring_warranty: equipment.filter(item => {
           if (!item.warranty_date) return false
           const warrantyDate = new Date(item.warranty_date)
@@ -129,6 +135,7 @@ export class DashboardService {
         borrowed_equipment: 0,
         total_users: 0,
         total_departments: 0,
+        total_equipment_types: 0,
         expiring_warranty: 0,
         expired_warranty: 0
       }
