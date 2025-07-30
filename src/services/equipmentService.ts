@@ -520,35 +520,100 @@ export class EquipmentService {
   }>> {
     try {
       const { data, error } = await supabase
-        .from('equipment_activities')
+        .from('equipment_history')
         .select(`
           id,
-          activity_type,
-          description,
-          activity_data,
+          action_type,
+          field_name,
+          old_value,
+          new_value,
+          change_reason,
           created_at,
-          user_id,
-          users(first_name, last_name, role)
+          changed_by,
+          users!inner(first_name, last_name, role)
         `)
         .eq('equipment_id', equipmentId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      // Process the data to convert activities to history format
-      const processedData = (data || []).map((item) => {
-        return {
-          id: item.id,
-          action_type: item.activity_type,
-          field_name: 'activity',
-          old_value: undefined,
-          new_value: item.description,
-          change_reason: item.description,
-          created_at: item.created_at,
-          changed_by_name: item.users ? `${item.users.first_name} ${item.users.last_name}` : undefined,
-          changed_by_role: item.users?.role
-        }
-      })
+      // Process the data to convert UUIDs to names for assignment fields  
+      const processedData = await Promise.all(
+        (data || []).map(async (item) => {
+          let oldValue = item.old_value
+          let newValue = item.new_value
+
+          // Convert UUIDs to names for assignment fields
+          if (item.field_name === 'current_user_id') {
+            if (oldValue) {
+              try {
+                const { data: oldUser } = await supabase
+                  .from('users')
+                  .select('first_name, last_name')
+                  .eq('id', oldValue)
+                  .single()
+                oldValue = oldUser ? `${oldUser.first_name} ${oldUser.last_name}` : 'ไม่ระบุ'
+              } catch (error) {
+                oldValue = 'ไม่ระบุ'
+              }
+            }
+
+            if (newValue) {
+              try {
+                const { data: newUser } = await supabase
+                  .from('users')
+                  .select('first_name, last_name')
+                  .eq('id', newValue)
+                  .single()
+                newValue = newUser ? `${newUser.first_name} ${newUser.last_name}` : 'ไม่ระบุ'
+              } catch (error) {
+                newValue = 'ไม่ระบุ'
+              }
+            }
+          }
+
+          // Convert UUIDs to department names
+          if (item.field_name === 'department_id') {
+            if (oldValue) {
+              try {
+                const { data: oldDept } = await supabase
+                  .from('departments')
+                  .select('name, code')
+                  .eq('id', oldValue)
+                  .single()
+                oldValue = oldDept ? `${oldDept.name} (${oldDept.code})` : 'ไม่ระบุ'
+              } catch (error) {
+                oldValue = 'ไม่ระบุ'
+              }
+            }
+
+            if (newValue) {
+              try {
+                const { data: newDept } = await supabase
+                  .from('departments')
+                  .select('name, code')
+                  .eq('id', newValue)
+                  .single()
+                newValue = newDept ? `${newDept.name} (${newDept.code})` : 'ไม่ระบุ'
+              } catch (error) {
+                newValue = 'ไม่ระบุ'
+              }
+            }
+          }
+
+          return {
+            id: item.id,
+            action_type: item.action_type,
+            field_name: item.field_name,
+            old_value: oldValue,
+            new_value: newValue,
+            change_reason: item.change_reason,
+            created_at: item.created_at,
+            changed_by_name: item.users ? `${item.users.first_name} ${item.users.last_name}` : undefined,
+            changed_by_role: item.users?.role
+          }
+        })
+      )
 
       return processedData
     } catch (error) {
@@ -557,7 +622,7 @@ export class EquipmentService {
     }
   }
 
-  // Get all equipment history (for history page) - simplified version
+  // Get all equipment history (for history page)
   static async getAllEquipmentHistory(): Promise<Array<{
     id: string
     equipment_id: string
@@ -574,23 +639,25 @@ export class EquipmentService {
   }>> {
     try {
       const { data, error } = await supabase
-        .from('equipment_activities')
+        .from('equipment_history')
         .select(`
           id,
           equipment_id,
-          activity_type,
-          description,
-          activity_data,
+          action_type,
+          field_name,
+          old_value,
+          new_value,
+          change_reason,
           created_at,
-          user_id,
-          users(first_name, last_name, role)
+          changed_by,
+          users!inner(first_name, last_name, role)
         `)
         .order('created_at', { ascending: false })
         .limit(1000) // Limit to prevent performance issues
 
       if (error) throw error
 
-      // Get equipment details for all activities
+      // Get equipment details for all history items
       const equipmentIds = [...new Set((data || []).map(item => item.equipment_id))]
       const { data: equipmentData, error: equipmentError } = await supabase
         .from('equipment')
@@ -605,25 +672,88 @@ export class EquipmentService {
         (equipmentData || []).map(eq => [eq.id, { name: eq.name, code: eq.equipment_code }])
       )
 
-      // Process the data to convert activities to history format
-      const processedData = (data || []).map((item) => {
-        const equipment = equipmentMap.get(item.equipment_id)
+      // Process the data to convert UUIDs to names for assignment fields
+      const processedData = await Promise.all(
+        (data || []).map(async (item) => {
+          let oldValue = item.old_value
+          let newValue = item.new_value
 
-        return {
-          id: item.id,
-          equipment_id: item.equipment_id,
-          equipment_name: equipment?.name || 'ไม่ระบุ',
-          equipment_code: equipment?.code || 'ไม่ระบุ',
-          action_type: item.activity_type,
-          field_name: 'activity',
-          old_value: undefined,
-          new_value: item.description,
-          change_reason: item.description,
-          created_at: item.created_at,
-          changed_by_name: item.users ? `${item.users.first_name} ${item.users.last_name}` : undefined,
-          changed_by_role: item.users?.role
-        }
-      })
+          // Convert UUIDs to names for assignment fields
+          if (item.field_name === 'current_user_id') {
+            if (oldValue) {
+              try {
+                const { data: oldUser } = await supabase
+                  .from('users')
+                  .select('first_name, last_name')
+                  .eq('id', oldValue)
+                  .single()
+                oldValue = oldUser ? `${oldUser.first_name} ${oldUser.last_name}` : 'ไม่ระบุ'
+              } catch (error) {
+                oldValue = 'ไม่ระบุ'
+              }
+            }
+
+            if (newValue) {
+              try {
+                const { data: newUser } = await supabase
+                  .from('users')
+                  .select('first_name, last_name')
+                  .eq('id', newValue)
+                  .single()
+                newValue = newUser ? `${newUser.first_name} ${newUser.last_name}` : 'ไม่ระบุ'
+              } catch (error) {
+                newValue = 'ไม่ระบุ'
+              }
+            }
+          }
+
+          // Convert UUIDs to department names
+          if (item.field_name === 'department_id') {
+            if (oldValue) {
+              try {
+                const { data: oldDept } = await supabase
+                  .from('departments')
+                  .select('name, code')
+                  .eq('id', oldValue)
+                  .single()
+                oldValue = oldDept ? `${oldDept.name} (${oldDept.code})` : 'ไม่ระบุ'
+              } catch (error) {
+                oldValue = 'ไม่ระบุ'
+              }
+            }
+
+            if (newValue) {
+              try {
+                const { data: newDept } = await supabase
+                  .from('departments')
+                  .select('name, code')
+                  .eq('id', newValue)
+                  .single()
+                newValue = newDept ? `${newDept.name} (${newDept.code})` : 'ไม่ระบุ'
+              } catch (error) {
+                newValue = 'ไม่ระบุ'
+              }
+            }
+          }
+
+          const equipment = equipmentMap.get(item.equipment_id)
+
+          return {
+            id: item.id,
+            equipment_id: item.equipment_id,
+            equipment_name: equipment?.name || 'ไม่ระบุ',
+            equipment_code: equipment?.code || 'ไม่ระบุ',
+            action_type: item.action_type,
+            field_name: item.field_name,
+            old_value: oldValue,
+            new_value: newValue,
+            change_reason: item.change_reason,
+            created_at: item.created_at,
+            changed_by_name: item.users ? `${item.users.first_name} ${item.users.last_name}` : undefined,
+            changed_by_role: item.users?.role
+          }
+        })
+      )
 
       return processedData
     } catch (error) {
