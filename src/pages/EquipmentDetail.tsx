@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { QRCodeComponent } from "@/components/ui/qr-code"
-import { ArrowLeft, Edit, Trash2, Calendar, MapPin, User, Building, Package, DollarSign, Shield, AlertTriangle, History, Clock, UserCheck, QrCode } from "lucide-react"
-import { useState, useEffect } from "react"
+import { ArrowLeft, Edit, Trash2, Calendar, MapPin, User, Building, Package, DollarSign, Shield, AlertTriangle, History, Clock, UserCheck, QrCode, Image as ImageIcon, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
+import { ImageService } from "@/services/imageService"
 import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
@@ -20,6 +21,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -73,13 +78,35 @@ export default function EquipmentDetail() {
   const [loading, setLoading] = useState(true)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [images, setImages] = useState<any[]>([])
+  const [imagesLoading, setImagesLoading] = useState(true)
+  const [selectedImage, setSelectedImage] = useState<number | null>(null)
+  const [galleryOpen, setGalleryOpen] = useState(false)
 
   useEffect(() => {
     if (id) {
       loadEquipmentDetail(id)
       loadEquipmentHistory(id)
+      loadEquipmentImages(id)
     }
   }, [id])
+
+  const loadEquipmentImages = async (equipmentId: string) => {
+    try {
+      setImagesLoading(true)
+      const imageData = await ImageService.getEquipmentImages(equipmentId)
+      setImages(imageData)
+    } catch (error) {
+      console.error('Error loading equipment images:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดรูปภาพได้",
+        variant: "destructive"
+      })
+    } finally {
+      setImagesLoading(false)
+    }
+  }
 
   const loadEquipmentDetail = async (equipmentId: string) => {
     try {
@@ -261,6 +288,36 @@ export default function EquipmentDetail() {
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
     return warranty <= thirtyDaysFromNow && warranty > now
   }
+
+  const handleImageClick = (index: number) => {
+    setSelectedImage(index)
+    setGalleryOpen(true)
+  }
+
+  const handlePrevImage = useCallback(() => {
+    if (selectedImage === null || !images.length) return
+    setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev! - 1))
+  }, [selectedImage, images.length])
+
+  const handleNextImage = useCallback(() => {
+    if (selectedImage === null || !images.length) return
+    setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev! + 1))
+  }, [selectedImage, images.length])
+
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'ArrowLeft') handlePrevImage()
+    else if (event.key === 'ArrowRight') handleNextImage()
+    else if (event.key === 'Escape') setGalleryOpen(false)
+  }, [handlePrevImage, handleNextImage])
+
+  useEffect(() => {
+    if (galleryOpen) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown)
+      }
+    }
+  }, [galleryOpen, handleKeyDown])
 
   if (loading) {
     return (
@@ -715,6 +772,66 @@ export default function EquipmentDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Equipment Images */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5" />
+                  รูปภาพครุภัณฑ์
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {imagesLoading ? (
+                  <div className="text-center py-4 text-muted-foreground">กำลังโหลดรูปภาพ...</div>
+                ) : images.length > 0 ? (
+                  <div className="space-y-4">
+                    {images.find(img => img.is_primary) && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground mb-2 block">รูปหลัก</Label>
+                        <div
+                          className="aspect-video w-full rounded-lg overflow-hidden cursor-pointer group relative"
+                          onClick={() => handleImageClick(images.findIndex(img => img.is_primary))}
+                        >
+                          <img
+                            src={images.find(img => img.is_primary)?.image_url}
+                            alt="Primary equipment"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </div>
+                      </div>
+                    )}
+                    {images.filter(img => !img.is_primary).length > 0 && (
+                       <div>
+                        <Label className="text-sm font-medium text-muted-foreground mb-2 block">รูปอื่นๆ</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {images.filter(img => !img.is_primary).map(image => {
+                            const imageIndex = images.findIndex(img => img.id === image.id);
+                            return (
+                              <div
+                                key={image.id}
+                                className="aspect-square w-full rounded-lg overflow-hidden cursor-pointer group relative"
+                                onClick={() => handleImageClick(imageIndex)}
+                              >
+                                <img
+                                  src={image.image_url}
+                                  alt={image.image_name || "Equipment"}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                              </div>
+                            )
+                          })}
+                        </div>
+                       </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">ไม่มีรูปภาพ</div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* QR Code */}
             <Card>
               <CardHeader>
@@ -750,7 +867,6 @@ export default function EquipmentDetail() {
                   variant="outline" 
                   className="w-full"
                   onClick={() => {
-                    // Copy equipment code to clipboard
                     navigator.clipboard.writeText(equipment.equipment_code)
                     toast({
                       title: "คัดลอกแล้ว",
@@ -766,6 +882,63 @@ export default function EquipmentDetail() {
           </div>
         </div>
       </div>
+
+      <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+        <DialogContent className="max-w-4xl p-0">
+          <div className="relative aspect-video">
+            {selectedImage !== null && images[selectedImage] && (
+               <img
+                  src={images[selectedImage].image_url}
+                  alt={images[selectedImage].image_name || "Equipment"}
+                  className="w-full h-full object-contain"
+                />
+            )}
+             <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 rounded-full bg-black/20 hover:bg-black/40 text-white"
+              onClick={() => setGalleryOpen(false)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/20 hover:bg-black/40 text-white"
+              onClick={handlePrevImage}
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/20 hover:bg-black/40 text-white"
+              onClick={handleNextImage}
+            >
+              <ChevronRight className="h-8 w-8" />
+            </Button>
+          </div>
+           {images.length > 1 && (
+             <div className="p-4 bg-background/80 backdrop-blur-sm">
+                <div className="grid grid-cols-8 gap-2">
+                  {images.map((image, index) => (
+                    <div
+                      key={image.id}
+                      className={`aspect-square w-full rounded-md overflow-hidden cursor-pointer border-2 ${selectedImage === index ? 'border-primary' : 'border-transparent'}`}
+                      onClick={() => setSelectedImage(index)}
+                    >
+                      <img
+                        src={image.image_url}
+                        alt={image.image_name || "Thumbnail"}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   )
-} 
+}

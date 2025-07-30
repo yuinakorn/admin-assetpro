@@ -11,9 +11,10 @@ export interface ImageUploadResult {
 interface EquipmentImageInsert {
   equipment_id: string
   image_url: string
-  file_name?: string
+  image_name?: string
   file_size?: number
-  image_type?: string
+  mime_type?: string
+  is_primary?: boolean
   uploaded_by?: string
 }
 
@@ -80,18 +81,19 @@ export class ImageService {
       if (isPrimary) {
         await supabase
           .from('equipment_images')
-          .update({ image_type: 'secondary' })
+          .update({ is_primary: false })
           .eq('equipment_id', equipmentId)
-          .eq('image_type', 'primary')
+          .eq('is_primary', true)
       }
 
       // บันทึกรูปภาพใหม่
       const imageDataToInsert: EquipmentImageInsert = {
         equipment_id: equipmentId,
         image_url: imageData.url,
-        file_name: imageData.name,
+        image_name: imageData.name,
         file_size: imageData.size,
-        image_type: isPrimary ? 'primary' : 'secondary',
+        mime_type: imageData.mimeType,
+        is_primary: isPrimary,
         uploaded_by: (await supabase.auth.getUser()).data.user?.id
       }
       
@@ -117,7 +119,7 @@ export class ImageService {
         .from('equipment_images')
         .select('*')
         .eq('equipment_id', equipmentId)
-        .order('image_type', { ascending: false })
+        .order('is_primary', { ascending: false })
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -182,14 +184,14 @@ export class ImageService {
       // ยกเลิกรูปหลักอื่นๆ
       await supabase
         .from('equipment_images')
-        .update({ image_type: 'secondary' })
+        .update({ is_primary: false })
         .eq('equipment_id', equipmentId)
-        .eq('image_type', 'primary')
+        .eq('is_primary', true)
 
       // ตั้งค่ารูปภาพใหม่เป็นรูปหลัก
       const { error } = await supabase
         .from('equipment_images')
-        .update({ image_type: 'primary' })
+        .update({ is_primary: true })
         .eq('id', imageId)
 
       if (error) {
