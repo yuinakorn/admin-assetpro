@@ -22,8 +22,12 @@ RUN bun install
 # Copy the rest of the application source code
 COPY . .
 
+# Define build-time arguments
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+
 # Build the application
-RUN bun run build
+RUN VITE_SUPABASE_URL=${VITE_SUPABASE_URL} VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY} bun run build
 
 
 # Stage 2: Serve the application with Nginx

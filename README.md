@@ -71,3 +71,15 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+# deploy
+```
+docker build \
+  --build-arg VITE_SUPABASE_URL="YOUR_SUPABASE_URL" \
+  --build-arg VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY" \
+  -t re-admin-assetpro .
+```
+
+```
+docker-compose up --build
+```
