@@ -22,6 +22,7 @@ export default function EquipmentAdd() {
     brand: "",
     model: "",
     serial_number: "",
+    asset_number: "",
     notes: "",
     purchase_date: "",
     warranty_date: "",
@@ -182,6 +183,7 @@ export default function EquipmentAdd() {
         brand: formData.brand,
         model: formData.model,
         serial_number: formData.serial_number,
+        asset_number: formData.asset_number,
         notes: formData.notes,
         purchase_date: formData.purchase_date || null,
         warranty_date: formData.warranty_date || null,
@@ -317,15 +319,24 @@ export default function EquipmentAdd() {
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="serial_number">เลขครุภัณฑ์</Label>
-                      <Input 
-                        id="serial_number" 
-                        placeholder="เลขครุภัณฑ์ประจำเครื่อง"
-                        value={formData.serial_number}
-                        onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                      />
-                    </div>
+                    <div className="space-y-2">
+  <Label htmlFor="serial_number">เลขประจำเครื่อง</Label>
+  <Input
+    id="serial_number"
+    placeholder="Serial Number ของเครื่อง"
+    value={formData.serial_number}
+    onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+  />
+</div>
+<div className="space-y-2">
+  <Label htmlFor="asset_number">เลขครุภัณฑ์</Label>
+  <Input
+    id="asset_number"
+    placeholder="เลขครุภัณฑ์ขององค์กร"
+    value={formData.asset_number}
+    onChange={(e) => setFormData({ ...formData, asset_number: e.target.value })}
+  />
+</div>
                     <div>
                       <Label htmlFor="location">สถานที่ตั้ง</Label>
                       <Input 
@@ -459,12 +470,13 @@ export default function EquipmentAdd() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="current_employee_name">ชื่อเจ้าของเครื่อง</Label>
+                    <Label htmlFor="current_employee_name">ชื่อเจ้าของเครื่อง *</Label>
                     <Input 
                       id="current_employee_name" 
                       placeholder="ชื่อเจ้าของเครื่องปัจจุบัน"
                       value={formData.current_employee_name}
                       onChange={(e) => setFormData({ ...formData, current_employee_name: e.target.value })}
+                      required
                     />
                   </div>
                 </CardContent>

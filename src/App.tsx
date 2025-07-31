@@ -26,6 +26,9 @@ import CategoryList from "./pages/CategoryList";
 import CategoryAdd from "./pages/CategoryAdd";
 import CategoryEdit from "./pages/CategoryEdit";
 import NotFound from "./pages/NotFound";
+import CPUList from "./pages/CPUList";
+import CPUAdd from "./pages/CPUAdd";
+import CPUEdit from "./pages/CPUEdit";
 
 const queryClient = new QueryClient();
 
@@ -143,6 +146,24 @@ const App = () => (
               <Route path="/history" element={
                 <ProtectedRoute>
                   <History />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/cpu" element={
+                <ProtectedRoute>
+                  <CPUList />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/cpu/add" element={
+                <ProtectedRoute requiredRole="admin">
+                  <CPUAdd />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/cpu/edit/:id" element={
+                <ProtectedRoute requiredRole="admin">
+                  <CPUEdit />
                 </ProtectedRoute>
               } />
               

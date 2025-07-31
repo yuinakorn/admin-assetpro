@@ -144,6 +144,18 @@ export function AppSidebar() {
       ]
     },
     {
+      label: "คุณสมบัติเฉพาะ",
+      icon: Settings,
+      url: "/properties",
+      show: true, // Assuming all users can see this for now
+      children: [
+        { label: "CPU", url: "/properties/cpu" },
+        { label: "Harddisk", url: "/properties/harddisk" },
+        { label: "OS", url: "/properties/os" },
+        { label: "Office", url: "/properties/office" }
+      ]
+    },
+    {
       label: "ประวัติ",
       icon: FileText,
       url: "/history",

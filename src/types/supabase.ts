@@ -110,15 +110,50 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "borrow_records_equipment_id_fkey"
-            columns: ["equipment_id"]
+            foreignKeyName: "borrow_records_returned_by_fkey"
+            columns: ["returned_by"]
             isOneToOne: false
-            referencedRelation: "equipment_with_related_counts"
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cpu: {
+        Row: {
+          cpu_name: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          cpu_name: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          cpu_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cpu_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "borrow_records_returned_by_fkey"
-            columns: ["returned_by"]
+            foreignKeyName: "cpu_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -344,13 +379,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "equipment_activities_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_with_related_counts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "equipment_activities_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -454,44 +482,46 @@ export type Database = {
             referencedRelation: "equipment_details"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "equipment_history_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_with_related_counts"
-            referencedColumns: ["id"]
-          },
         ]
       }
       equipment_images: {
         Row: {
           created_at: string | null
-          equipment_id: string | null
-          file_name: string | null
+          equipment_id: string
           file_size: number | null
           id: string
-          image_type: string | null
+          image_name: string | null
           image_url: string
+          is_primary: boolean | null
+          mime_type: string | null
+          updated_at: string | null
+          uploaded_at: string | null
           uploaded_by: string | null
         }
         Insert: {
           created_at?: string | null
-          equipment_id?: string | null
-          file_name?: string | null
+          equipment_id: string
           file_size?: number | null
           id?: string
-          image_type?: string | null
+          image_name?: string | null
           image_url: string
+          is_primary?: boolean | null
+          mime_type?: string | null
+          updated_at?: string | null
+          uploaded_at?: string | null
           uploaded_by?: string | null
         }
         Update: {
           created_at?: string | null
-          equipment_id?: string | null
-          file_name?: string | null
+          equipment_id?: string
           file_size?: number | null
           id?: string
-          image_type?: string | null
+          image_name?: string | null
           image_url?: string
+          is_primary?: boolean | null
+          mime_type?: string | null
+          updated_at?: string | null
+          uploaded_at?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
@@ -507,20 +537,6 @@ export type Database = {
             columns: ["equipment_id"]
             isOneToOne: false
             referencedRelation: "equipment_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "equipment_images_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_with_related_counts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "equipment_images_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -597,13 +613,6 @@ export type Database = {
             columns: ["equipment_id"]
             isOneToOne: false
             referencedRelation: "equipment_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "maintenance_records_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_with_related_counts"
             referencedColumns: ["id"]
           },
           {
@@ -724,13 +733,6 @@ export type Database = {
             referencedRelation: "equipment_details"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "warranty_alerts_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_with_related_counts"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
@@ -845,84 +847,6 @@ export type Database = {
             referencedRelation: "equipment_details"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "equipment_history_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_with_related_counts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      equipment_with_related_counts: {
-        Row: {
-          activity_count: number | null
-          asset_number: string | null
-          borrow_count: number | null
-          brand: string | null
-          cpu: string | null
-          created_at: string | null
-          created_by: string | null
-          current_user_id: string | null
-          department_id: string | null
-          equipment_code: string | null
-          gpu: string | null
-          hostname: string | null
-          id: string | null
-          image_count: number | null
-          ip_address: unknown | null
-          location: string | null
-          mac_address: unknown | null
-          maintenance_count: number | null
-          model: string | null
-          name: string | null
-          notes: string | null
-          operating_system: string | null
-          product_key: string | null
-          purchase_date: string | null
-          purchase_price: number | null
-          qr_code: string | null
-          ram: string | null
-          serial_number: string | null
-          status: Database["public"]["Enums"]["equipment_status"] | null
-          storage: string | null
-          supplier: string | null
-          total_related_records: number | null
-          type: Database["public"]["Enums"]["equipment_type"] | null
-          updated_at: string | null
-          updated_by: string | null
-          warranty_count: number | null
-          warranty_date: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "equipment_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "equipment_current_user_id_fkey"
-            columns: ["current_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "equipment_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "equipment_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       recent_activities: {
@@ -952,13 +876,6 @@ export type Database = {
             columns: ["equipment_id"]
             isOneToOne: false
             referencedRelation: "equipment_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "equipment_activities_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_with_related_counts"
             referencedColumns: ["id"]
           },
           {

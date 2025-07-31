@@ -258,7 +258,7 @@ export default function Login() {
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-2">
                 <Users className="w-6 h-6 text-white" />
               </div>
-              <div className="text-2xl font-bold mb-1">40+</div>
+              <div className="text-2xl font-bold mb-1">1+</div>
               <div className="text-blue-100 text-sm">ผู้ใช้งาน</div>
             </div>
             <div className="text-center">

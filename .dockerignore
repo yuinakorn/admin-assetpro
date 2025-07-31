@@ -1,0 +1,25 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+build
+
+# Docker
+.dockerignore
+Dockerfile
+
+# IDE
+.vscode
+.idea
+
+# Environment
+.env*
+!.env.example
+
+# Supabase local dev
+supabase/
