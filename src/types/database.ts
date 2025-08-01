@@ -5,14 +5,6 @@
 // ENUMS
 // ========================================
 
-export type EquipmentType = 
-  | 'computer'      // คอมพิวเตอร์
-  | 'laptop'        // โน้ตบุ๊ค
-  | 'monitor'       // จอภาพ
-  | 'printer'       // เครื่องพิมพ์
-  | 'ups'           // UPS
-  | 'network_device'; // Network Device
-
 export type EquipmentStatus = 
   | 'normal'        // ใช้งานปกติ
   | 'damaged'       // ชำรุด
@@ -69,7 +61,7 @@ export interface Equipment {
   id: string;
   equipment_code: string; // EQ001, EQ002, etc.
   name: string;
-  type: EquipmentType;
+  category_id?: string;
   brand: string;
   model: string;
   serial_number: string;
@@ -308,7 +300,7 @@ export interface PaginatedResponse<T> {
 
 export interface EquipmentFormData {
   name: string;
-  type: EquipmentType;
+  category_id?: string;
   brand: string;
   model: string;
   serial_number: string;
@@ -355,7 +347,7 @@ export interface MaintenanceFormData {
 
 export interface EquipmentFilters {
   search?: string;
-  type?: EquipmentType;
+  category_id?: string;
   status?: EquipmentStatus;
   department_id?: string;
   warranty_expiring?: boolean;
@@ -396,15 +388,6 @@ export interface WarrantyExpiryData {
 // ========================================
 // CONSTANTS
 // ========================================
-
-export const EQUIPMENT_TYPE_LABELS: Record<EquipmentType, string> = {
-  computer: 'คอมพิวเตอร์',
-  laptop: 'โน้ตบุ๊ค',
-  monitor: 'จอภาพ',
-  printer: 'เครื่องพิมพ์',
-  ups: 'UPS',
-  network_device: 'Network Device'
-};
 
 export const EQUIPMENT_STATUS_LABELS: Record<EquipmentStatus, string> = {
   normal: 'ใช้งานปกติ',

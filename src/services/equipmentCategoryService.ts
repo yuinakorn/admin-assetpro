@@ -24,38 +24,20 @@ export class EquipmentCategoryService {
     }
   }
 
-  // Get all equipment categories with equipment count
+  // Get all equipment categories with equipment count using RPC
   static async getCategoriesWithStats(): Promise<EquipmentCategoryWithStats[]> {
     try {
-      const { data, error } = await supabase
-        .from('equipment_categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true })
-        .order('name', { ascending: true })
+      const { data, error } = await supabase.rpc('get_categories_with_stats')
 
       if (error) throw error
+      
+      // The RPC function returns a slightly different shape, let's ensure it matches our interface.
+      // The count is already included, so no need for Promise.all.
+      return (data || []).map(item => ({
+        ...item,
+        equipment_count: Number(item.equipment_count) || 0
+      })) as EquipmentCategoryWithStats[]
 
-      // Get equipment count for each category
-      const categoriesWithStats = await Promise.all(
-        (data || []).map(async (category) => {
-          const { count, error: countError } = await supabase
-            .from('equipment')
-            .select('*', { count: 'exact', head: true })
-            .eq('type', this.mapCategoryCodeToType(category.code))
-
-          if (countError) {
-            console.warn('Error counting equipment for category:', category.code, countError)
-          }
-
-          return {
-            ...category,
-            equipment_count: count || 0
-          }
-        })
-      )
-
-      return categoriesWithStats
     } catch (error) {
       console.error('Error fetching equipment categories with stats:', error)
       throw error
@@ -176,19 +158,6 @@ export class EquipmentCategoryService {
       console.error('Error fetching categories for equipment:', error)
       return []
     }
-  }
-
-  // Helper method to map category code to equipment type
-  private static mapCategoryCodeToType(code: string): string {
-    const codeMap: Record<string, string> = {
-      'COMPUTER': 'computer',
-      'LAPTOP': 'laptop',
-      'MONITOR': 'monitor',
-      'PRINTER': 'printer',
-      'UPS': 'ups',
-      'NETWORK': 'network_device'
-    }
-    return codeMap[code] || 'computer'
   }
 
   // Helper method to get icon component name

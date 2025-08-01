@@ -18,7 +18,7 @@ export default function EquipmentAdd() {
   const { toast } = useToast()
   const [formData, setFormData] = useState({
     name: "",
-    type: "computer" as "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device",
+    category_id: "",
     brand: "",
     model: "",
     serial_number: "",
@@ -89,7 +89,6 @@ export default function EquipmentAdd() {
       setCategoriesLoading(true)
       console.log('Loading categories...')
       const data = await EquipmentCategoryService.getCategoriesForEquipment()
-      console.log('Categories loaded:', data)
       setCategories(data)
     } catch (error) {
       console.error('Error loading categories:', error)
@@ -101,19 +100,6 @@ export default function EquipmentAdd() {
     } finally {
       setCategoriesLoading(false)
     }
-  }
-
-  // Helper function to map category code to equipment type
-  const mapCategoryCodeToType = (code: string): "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device" => {
-    const codeMap: Record<string, "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device"> = {
-      'COMPUTER': 'computer',
-      'LAPTOP': 'laptop',
-      'MONITOR': 'monitor',
-      'PRINTER': 'printer',
-      'UPS': 'ups',
-      'NETWORK': 'network_device'
-    }
-    return codeMap[code] || 'computer'
   }
 
   // Show loading state while initial data is loading
@@ -179,7 +165,7 @@ export default function EquipmentAdd() {
       // Create equipment data
       const equipmentData = {
         name: formData.name,
-        type: formData.type,
+        category_id: formData.category_id,
         brand: formData.brand,
         model: formData.model,
         serial_number: formData.serial_number,
@@ -265,8 +251,8 @@ export default function EquipmentAdd() {
                     <div>
                       <Label htmlFor="type">ประเภท *</Label>
                       <Select 
-                        value={formData.type} 
-                        onValueChange={(value: "computer" | "laptop" | "monitor" | "printer" | "ups" | "network_device") => setFormData({ ...formData, type: value })}
+                        value={formData.category_id} 
+                        onValueChange={(value) => setFormData({ ...formData, category_id: value })}
                         disabled={categoriesLoading}
                       >
                         <SelectTrigger>
@@ -286,7 +272,7 @@ export default function EquipmentAdd() {
                             categories.map((category) => (
                               <SelectItem 
                                 key={category.id} 
-                                value={mapCategoryCodeToType(category.code)}
+                                value={category.id}
                               >
                                 {category.name}
                               </SelectItem>

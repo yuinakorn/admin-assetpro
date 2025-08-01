@@ -29,6 +29,15 @@ import NotFound from "./pages/NotFound";
 import CPUList from "./pages/CPUList";
 import CPUAdd from "./pages/CPUAdd";
 import CPUEdit from "./pages/CPUEdit";
+import HarddiskList from "./pages/HarddiskList";
+import HarddiskAdd from "./pages/HarddiskAdd";
+import HarddiskEdit from "./pages/HarddiskEdit";
+import OSList from "./pages/OSList";
+import OSAdd from "./pages/OSAdd";
+import OSEdit from "./pages/OSEdit";
+import OfficeList from "./pages/OfficeList";
+import OfficeAdd from "./pages/OfficeAdd";
+import OfficeEdit from "./pages/OfficeEdit";
 
 const queryClient = new QueryClient();
 
@@ -164,6 +173,60 @@ const App = () => (
               <Route path="/properties/cpu/edit/:id" element={
                 <ProtectedRoute requiredRole="admin">
                   <CPUEdit />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/harddisk" element={
+                <ProtectedRoute>
+                  <HarddiskList />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/harddisk/add" element={
+                <ProtectedRoute requiredRole="admin">
+                  <HarddiskAdd />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/harddisk/edit/:id" element={
+                <ProtectedRoute requiredRole="admin">
+                  <HarddiskEdit />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/os" element={
+                <ProtectedRoute>
+                  <OSList />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/os/add" element={
+                <ProtectedRoute requiredRole="admin">
+                  <OSAdd />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/os/edit/:id" element={
+                <ProtectedRoute requiredRole="admin">
+                  <OSEdit />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/office" element={
+                <ProtectedRoute>
+                  <OfficeList />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/office/add" element={
+                <ProtectedRoute requiredRole="admin">
+                  <OfficeAdd />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/properties/office/edit/:id" element={
+                <ProtectedRoute requiredRole="admin">
+                  <OfficeEdit />
                 </ProtectedRoute>
               } />
               
