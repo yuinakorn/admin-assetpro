@@ -137,7 +137,7 @@ export default function Register() {
                 <Label htmlFor="username">ชื่อผู้ใช้ (Username)</Label>
                 <Input
                   id="username"
-                  placeholder="เช่น adminssj"
+                  placeholder="เช่น somchai"
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
