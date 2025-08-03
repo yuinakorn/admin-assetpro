@@ -6,14 +6,14 @@ import { Building2, Monitor, Users, Shield, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function Index() {
-  const { user, loading } = useAuth()
+  const { user, userProfile, loading } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && userProfile) {
       navigate('/dashboard')
     }
-  }, [user, loading, navigate])
+  }, [user, userProfile, loading, navigate])
 
   if (loading) {
     return (
@@ -26,7 +26,7 @@ export default function Index() {
     )
   }
 
-  if (user) {
+  if (user && userProfile) {
     return null // Will redirect to dashboard
   }
 

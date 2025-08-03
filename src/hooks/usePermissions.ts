@@ -38,9 +38,10 @@ export interface Permissions {
 }
 
 export function usePermissions(): Permissions {
-  const { user } = useAuth()
+  const { user, userProfile } = useAuth()
   
-  const role = user?.user_metadata?.role || 'user'
+  // Use userProfile role if available, otherwise fallback to user_metadata
+  const role = userProfile?.role || user?.user_metadata?.role || 'user'
   
   const isAdmin = role === 'admin'
   const isManager = role === 'manager'

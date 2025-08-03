@@ -1,47 +1,118 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { User, Session } from '@supabase/supabase-js'
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
+import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 
+// Import User type from database types
+import type { User as DatabaseUser } from '@/types/database'
+
+// Define a more specific type for the user data passed during sign up
+interface SignUpUserData {
+  first_name: string;
+  last_name: string;
+  username: string;
+  role: 'admin' | 'manager' | 'user';
+}
+
+// Define the shape of the Auth context
 interface AuthContextType {
   user: User | null
   session: Session | null
+  userProfile: DatabaseUser | null
   loading: boolean
-  signIn: (username: string, password: string) => Promise<{ error: any }>
-  signUp: (username: string, email: string, password: string, userData: any) => Promise<{ error: any }>
+  signIn: (username: string, password: string) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, userData: SignUpUserData) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error: any }>
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>
 }
 
+// Create the context with an undefined initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Custom hook to use the Auth context, ensures it's used within a provider
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
+
+// The provider component that wraps the app and provides auth functionality
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
+  const [userProfile, setUserProfile] = useState<DatabaseUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+  // Function to fetch user profile from users table
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    try {
+      console.log('Fetching user profile for:', userId)
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      if (error) {
+        console.error('Error fetching user profile:', error)
+        return null
+      }
+      
+      console.log('User profile fetched:', profile)
+      return profile
+    } catch (err) {
+      console.error('Error fetching user profile:', err)
+      return null
+    }
+  }, [])
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+  useEffect(() => {
+    const getInitialSession = async () => {
+      try {
+        console.log('Getting initial session...')
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('Session:', session)
+        setSession(session)
+        setUser(session?.user ?? null)
+        
+        // Fetch user profile if user exists
+        if (session?.user) {
+          console.log('User exists, fetching profile...')
+          const profile = await fetchUserProfile(session.user.id)
+          setUserProfile(profile)
+        } else {
+          setUserProfile(null)
+        }
+        
+        setLoading(false)
+      } catch (error) {
+        console.error('Error in getInitialSession:', error)
+        setLoading(false)
+      }
+    }
+    
+    getInitialSession()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('Auth state changed:', _event, session)
       setSession(session)
       setUser(session?.user ?? null)
-      setLoading(false)
+      
+      // Fetch user profile when auth state changes
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id)
+        setUserProfile(profile)
+      } else {
+        setUserProfile(null)
+      }
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [fetchUserProfile])
 
-  const signIn = async (username: string, password: string) => {
+  const signIn = useCallback(async (username: string, password: string): Promise<{ error: Error | null }> => {
     try {
-      // First, get the email from username
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('email')
@@ -50,130 +121,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single()
 
       if (userError || !userData) {
-        return { error: { message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' } }
+        return { error: new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง') }
       }
 
-      // Then sign in with email
       const { error } = await supabase.auth.signInWithPassword({
         email: userData.email,
         password,
       })
-      return { error }
-    } catch (error) {
-      console.error('Sign in error:', error)
-      return { error: { message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' } }
-    }
-  }
-
-  const signUp = async (username: string, email: string, password: string, userData: any) => {
-    try {
-      console.log('Starting signup process...', { username, email })
       
-      // Check if username already exists
-      const { data: existingUsername, error: checkUsernameError } = await supabase
+      return { error }
+    } catch (err) {
+      const error = err as AuthError
+      console.error('Sign in error:', error)
+      return { error: new Error(error.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ') }
+    }
+  }, [])
+
+  const signUp = useCallback(async (email: string, password: string, userData: SignUpUserData): Promise<{ error: AuthError | null }> => {
+    try {
+      const { data: existingUsername } = await supabase
         .from('users')
         .select('username')
-        .eq('username', username)
+        .eq('username', userData.username)
         .single()
 
       if (existingUsername) {
-        console.log('Username already exists:', username)
-        return { error: { message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' } }
+        return { error: new AuthError('ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว') }
       }
-
-      // Check if email already exists
-      const { data: existingEmail, error: checkEmailError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', email)
-        .single()
-
-      if (existingEmail) {
-        console.log('Email already exists:', email)
-        return { error: { message: 'อีเมลนี้มีอยู่ในระบบแล้ว' } }
-      }
-
-      console.log('Username and email are available, proceeding with auth signup...')
-
-      // Sign up with Supabase Auth
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            ...userData,
-            username,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            username: userData.username,
+            role: userData.role
           },
           emailRedirectTo: `${window.location.origin}/login`,
         },
       })
 
       if (error) {
-        console.error('Auth signup error:', error)
         return { error }
       }
 
-      console.log('Auth signup successful, user data:', data.user)
-
-      // If signup successful, create user record in users table
-      if (data.user) {
-        const userRecord = {
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          username: username,
-          email: email,
-          password_hash: '', // Empty since we use Supabase Auth
-          role: userData.role || 'user',
-          department_id: null, // Set to null for new users
-          phone: null, // Set to null for new users
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-
-        console.log('Attempting to create user record:', userRecord)
-
-        const { data: insertData, error: insertError } = await supabase
-          .from('users')
-          .insert(userRecord)
-          .select()
-
-        if (insertError) {
-          console.error('Error creating user record:', insertError)
-          console.error('User record that failed to insert:', userRecord)
-          
-          // Return error so user knows something went wrong
-          return { 
-            error: { 
-              message: `สมัครสมาชิกสำเร็จ แต่ไม่สามารถสร้างข้อมูลผู้ใช้ได้: ${insertError.message}` 
-            } 
-          }
-        }
-
-        console.log('User record created successfully:', insertData)
-      }
-
       return { error: null }
-    } catch (error) {
+    } catch (err) {
+       const error = err as AuthError
       console.error('Sign up error:', error)
-      return { error: { message: 'เกิดข้อผิดพลาดในการสมัครสมาชิก' } }
+      return { error: new AuthError(error.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก') }
     }
-  }
+  }, [])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut()
-  }
+  }, [])
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string): Promise<{ error: AuthError | null }> => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
     return { error }
-  }
+  }, [])
 
   const value = {
     user,
     session,
+    userProfile,
     loading,
     signIn,
     signUp,
@@ -182,12 +198,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }

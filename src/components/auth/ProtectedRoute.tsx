@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, loading } = useAuth()
+  const { user, userProfile, loading } = useAuth()
   const location = useLocation()
 
   // Show loading spinner while checking authentication
@@ -31,7 +31,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   // Check role-based access if required
   if (requiredRole) {
-    const userRole = user.user_metadata?.role || 'user'
+    const userRole = userProfile?.role || user?.user_metadata?.role || 'user'
     const roleHierarchy = {
       'user': 1,
       'manager': 2,

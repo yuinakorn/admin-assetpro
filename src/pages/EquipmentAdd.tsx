@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, Plus, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
+import { EquipmentInsert } from "@/types/database"
 import { EquipmentCategoryService } from "@/services/equipmentCategoryService"
+import { cpuService, CPU } from "@/services/cpuService"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { useToast } from "@/hooks/use-toast"
 
@@ -31,26 +33,37 @@ export default function EquipmentAdd() {
     current_user_id: "",
     current_employee_name: "",
     status: "normal" as "normal" | "maintenance" | "damaged" | "disposed" | "borrowed",
-    location: ""
+    location: "",
+    cpu_id: "",
+    cpu_series: "",
+    ram: ""
   })
 
   const [loading, setLoading] = useState(false)
   const [departments, setDepartments] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [users, setUsers] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([])
+  const [cpus, setCpus] = useState<CPU[]>([])
   const [departmentsLoading, setDepartmentsLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(true)
   const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [cpusLoading, setCpusLoading] = useState(true)
   const [createdEquipmentId, setCreatedEquipmentId] = useState<string | null>(null)
 
   // Load departments, users, and categories on component mount
   useEffect(() => {
-    loadDepartments()
-    loadUsers()
-    loadCategories()
+    const loadData = async () => {
+      await Promise.all([
+        loadDepartments(),
+        loadUsers(),
+        loadCategories(),
+        loadCpus()
+      ])
+    }
+    loadData()
   }, [])
 
-  const loadDepartments = async () => {
+  const loadDepartments = useCallback(async () => {
     try {
       setDepartmentsLoading(true)
       const data = await EquipmentService.getDepartmentsForEquipment()
@@ -65,9 +78,9 @@ export default function EquipmentAdd() {
     } finally {
       setDepartmentsLoading(false)
     }
-  }
+  }, [toast])
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setUsersLoading(true)
       const data = await EquipmentService.getUsersForEquipment()
@@ -82,9 +95,9 @@ export default function EquipmentAdd() {
     } finally {
       setUsersLoading(false)
     }
-  }
+  }, [toast])
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       setCategoriesLoading(true)
       console.log('Loading categories...')
@@ -100,10 +113,27 @@ export default function EquipmentAdd() {
     } finally {
       setCategoriesLoading(false)
     }
-  }
+  }, [toast])
+
+  const loadCpus = useCallback(async () => {
+    try {
+      setCpusLoading(true)
+      const data = await cpuService.getAllCPUs()
+      setCpus(data)
+    } catch (error) {
+      console.error('Error loading cpus:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดข้อมูล CPU ได้",
+        variant: "destructive"
+      })
+    } finally {
+      setCpusLoading(false)
+    }
+  }, [toast])
 
   // Show loading state while initial data is loading
-  if (departmentsLoading || usersLoading || categoriesLoading) {
+  if (departmentsLoading || usersLoading || categoriesLoading || cpusLoading) {
     return (
       <DashboardLayout>
         <div className="space-y-6">
@@ -136,6 +166,9 @@ export default function EquipmentAdd() {
     )
   }
 
+  const selectedCategoryName = categories.find(c => c.id === formData.category_id)?.name.toLowerCase() || ''
+  const showComputerFields = ['computer', 'laptop', 'aio'].includes(selectedCategoryName)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -163,9 +196,9 @@ export default function EquipmentAdd() {
       }
 
       // Create equipment data
-      const equipmentData = {
+      const equipmentData: Omit<EquipmentInsert, 'created_by' | 'updated_by' | 'equipment_code'> = {
         name: formData.name,
-        category_id: formData.category_id,
+        category_id: formData.category_id || null,
         brand: formData.brand,
         model: formData.model,
         serial_number: formData.serial_number,
@@ -178,10 +211,28 @@ export default function EquipmentAdd() {
         current_user_id: formData.current_user_id || null,
         current_employee_name: formData.current_employee_name || null,
         status: formData.status,
-        location: formData.location
+        location: formData.location,
+        cpu_id: null,
+        cpu_series: null,
+        ram: null,
+        storage: null,
+        gpu: null,
+        operating_system: null,
+        product_key: null,
+        ip_address: null,
+        mac_address: null,
+        hostname: null,
+        qr_code: null,
+        supplier: null,
+      };
+
+      if (showComputerFields) {
+        equipmentData.cpu_id = formData.cpu_id || null
+        equipmentData.cpu_series = formData.cpu_series || null
+        equipmentData.ram = formData.ram ? parseInt(formData.ram, 10) : null
       }
 
-      const createdEquipment = await EquipmentService.createEquipment(equipmentData)
+      const createdEquipment = await EquipmentService.createEquipment(equipmentData as EquipmentInsert)
       
       // Set the created equipment ID for image upload
       setCreatedEquipmentId(createdEquipment.id)
@@ -345,6 +396,57 @@ export default function EquipmentAdd() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Specific Properties */}
+              {showComputerFields && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>คุณสมบัติเฉพาะ</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <Label htmlFor="cpu">CPU</Label>
+                        <Select
+                          value={formData.cpu_id}
+                          onValueChange={(value) => setFormData({ ...formData, cpu_id: value })}
+                          disabled={cpusLoading}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={cpusLoading ? "กำลังโหลด..." : "เลือก CPU"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {cpus.map((cpu) => (
+                              <SelectItem key={cpu.id} value={cpu.id!}>
+                                {cpu.cpu_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="cpu_series">CPU Series</Label>
+                        <Input
+                          id="cpu_series"
+                          placeholder="เช่น Core i5-8250U"
+                          value={formData.cpu_series}
+                          onChange={(e) => setFormData({ ...formData, cpu_series: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="ram">RAM (GB)</Label>
+                      <Input
+                        id="ram"
+                        type="number"
+                        placeholder="เช่น 8"
+                        value={formData.ram}
+                        onChange={(e) => setFormData({ ...formData, ram: e.target.value })}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Purchase Information */}
               <Card>

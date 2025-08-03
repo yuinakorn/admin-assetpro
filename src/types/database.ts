@@ -35,7 +35,6 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  password_hash: string;
   first_name: string;
   last_name: string;
   role: UserRole;
@@ -81,8 +80,9 @@ export interface Equipment {
   current_employee_name?: string; // ชื่อเจ้าของเครื่องปัจจุบัน
   
   // Computer-specific specifications
-  cpu?: string;
-  ram?: string;
+  cpu_id?: string;
+  cpu_series?: string;
+  ram?: number; // in GB
   storage?: string;
   gpu?: string;
   operating_system?: string;
@@ -128,7 +128,7 @@ export interface EquipmentActivity {
   user_id?: string;
   
   // Additional data for specific activities
-  activity_data?: Record<string, any>; // Store additional data like borrow/return dates, maintenance details, etc.
+  activity_data?: Record<string, unknown>; // Store additional data like borrow/return dates, maintenance details, etc.
   
   created_at: string;
 }
@@ -266,7 +266,7 @@ export type UserUpdate = Partial<Omit<User, 'id' | 'created_at' | 'updated_at'>>
 export type DepartmentInsert = Omit<Department, 'id' | 'created_at' | 'updated_at'>;
 export type DepartmentUpdate = Partial<Omit<Department, 'id' | 'created_at' | 'updated_at'>>;
 
-export type EquipmentInsert = Omit<Equipment, 'id' | 'equipment_code' | 'created_at' | 'updated_at'>;
+export type EquipmentInsert = Omit<Equipment, 'id' | 'equipment_code' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>;
 export type EquipmentUpdate = Partial<Omit<Equipment, 'id' | 'equipment_code' | 'created_at' | 'updated_at'>>;
 
 export type EquipmentActivityInsert = Omit<EquipmentActivity, 'id' | 'created_at'>;
@@ -425,7 +425,7 @@ export const PRIORITY_LABELS: Record<string, string> = {
 // UTILITY TYPES
 // ========================================
 
-export type WithRelations<T, R extends Record<string, any>> = T & R;
+export type WithRelations<T, R extends Record<string, unknown>> = T & R;
 
 export type EquipmentWithRelations = WithRelations<Equipment, {
   department?: Department;
