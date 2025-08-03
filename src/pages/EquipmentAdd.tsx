@@ -233,12 +233,14 @@ export default function EquipmentAdd() {
     )
   }
 
-  const selectedCategoryName = categories.find(c => c.id === formData.category_id)?.name || ''
-  const showComputerFields = ['คอมพิวเตอร์', 'โน้ตบุ๊ค'].includes(selectedCategoryName)
+  const selectedCategory = categories.find(c => c.id === formData.category_id)
+  const selectedCategoryCode = selectedCategory?.code || ''
+  const showComputerFields = ['COMPUTER', 'LAPTOP', 'AIO'].includes(selectedCategoryCode)
   
   // Debug log
   console.log('Selected category ID:', formData.category_id)
-  console.log('Selected category name:', selectedCategoryName)
+  console.log('Selected category code:', selectedCategoryCode)
+  console.log('Selected category name:', selectedCategory?.name || '')
   console.log('Show computer fields:', showComputerFields)
 
   const handleSubmit = async (e: React.FormEvent) => {
