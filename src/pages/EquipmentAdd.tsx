@@ -40,6 +40,7 @@ export default function EquipmentAdd() {
     cpu_id: "",
     cpu_series: "",
     ram: "",
+    storage: "",
     harddisk_id: "",
     os_id: "",
     office_id: ""
@@ -304,6 +305,7 @@ export default function EquipmentAdd() {
         equipmentData.cpu_id = formData.cpu_id || null
         equipmentData.cpu_series = formData.cpu_series || null
         equipmentData.ram = formData.ram ? parseInt(formData.ram, 10) : null
+        equipmentData.storage = formData.storage || null
         equipmentData.harddisk_id = formData.harddisk_id || null
         equipmentData.os_id = formData.os_id || null
         equipmentData.office_id = formData.office_id || null
@@ -521,24 +523,37 @@ export default function EquipmentAdd() {
                         onChange={(e) => setFormData({ ...formData, ram: e.target.value })}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="harddisk">Harddisk</Label>
-                      <Select
-                        value={formData.harddisk_id}
-                        onValueChange={(value) => setFormData({ ...formData, harddisk_id: value })}
-                        disabled={harddisksLoading}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={harddisksLoading ? "กำลังโหลด..." : "เลือก Harddisk"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                                                     {harddisks.map((harddisk) => (
-                             <SelectItem key={harddisk.id} value={harddisk.id!}>
-                               {harddisk.hdd_type}
-                             </SelectItem>
-                           ))}
-                        </SelectContent>
-                      </Select>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="harddisk">Harddisk Type</Label>
+                        <Select
+                          value={formData.harddisk_id}
+                          onValueChange={(value) => setFormData({ ...formData, harddisk_id: value })}
+                          disabled={harddisksLoading}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={harddisksLoading ? "กำลังโหลด..." : "เลือก Harddisk"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                                                       {harddisks.map((harddisk) => (
+                               <SelectItem key={harddisk.id} value={harddisk.id!}>
+                                 {harddisk.hdd_type}
+                               </SelectItem>
+                             ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="storage">Storage (GB,TB)</Label>
+                        <Input
+                          id="storage"
+                          type="text"
+                          placeholder="เช่น 256, 512, 1TB"
+                          value={formData.storage}
+                          onChange={(e) => setFormData({ ...formData, storage: e.target.value })}
+                        />
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="os">Operating System</Label>

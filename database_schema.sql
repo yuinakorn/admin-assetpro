@@ -106,12 +106,16 @@ CREATE TABLE equipment (
   current_user_id UUID REFERENCES users(id),
   
   -- Computer-specific specifications
-  cpu VARCHAR(100),
-  ram VARCHAR(50),
+  cpu_id UUID REFERENCES cpu(id) ON DELETE SET NULL,
+  cpu_series VARCHAR(100),
+  ram INTEGER, -- RAM size in GB
   storage VARCHAR(100),
   gpu VARCHAR(100),
   operating_system VARCHAR(100),
   product_key VARCHAR(255),
+  harddisk_id UUID REFERENCES harddisk(id) ON DELETE SET NULL,
+  os_id UUID REFERENCES os(id) ON DELETE SET NULL,
+  office_id UUID REFERENCES office(id) ON DELETE SET NULL,
   
   -- Network information
   ip_address INET,
@@ -228,6 +232,10 @@ CREATE INDEX idx_equipment_current_user ON equipment(current_user_id);
 CREATE INDEX idx_equipment_warranty_date ON equipment(warranty_date);
 CREATE INDEX idx_equipment_serial_number ON equipment(serial_number);
 CREATE INDEX idx_equipment_asset_number ON equipment(asset_number);
+CREATE INDEX idx_equipment_cpu_id ON equipment(cpu_id);
+CREATE INDEX idx_equipment_harddisk_id ON equipment(harddisk_id);
+CREATE INDEX idx_equipment_os_id ON equipment(os_id);
+CREATE INDEX idx_equipment_office_id ON equipment(office_id);
 
 -- Activity indexes
 CREATE INDEX idx_equipment_activities_equipment ON equipment_activities(equipment_id);
