@@ -47,9 +47,20 @@ interface EquipmentDetail {
   department_id?: string
   location?: string
   current_user_id?: string
-  cpu?: string
-  ram?: string
+  current_employee_name?: string
+  cpu_id?: string
+  cpu_series?: string
+  ram?: number
   storage?: string
+  gpu?: string
+  operating_system?: string
+  product_key?: string
+  ip_address?: string
+  mac_address?: string
+  hostname?: string
+  harddisk_id?: string
+  os_id?: string
+  office_id?: string
   created_at: string
   updated_at: string
   department_name?: string
@@ -58,6 +69,18 @@ interface EquipmentDetail {
   current_user_role?: string
   equipment_categories?: {
     name: string
+  }
+  cpu?: {
+    cpu_name: string
+  }
+  harddisk?: {
+    hdd_type: string
+  }
+  os?: {
+    os_name: string
+  }
+  office?: {
+    office_name: string
   }
 }
 
@@ -441,6 +464,64 @@ export default function EquipmentDetail() {
               </CardContent>
             </Card>
 
+            {/* Computer Specifications (if applicable) */}
+            {(equipment.cpu_id || equipment.cpu_series || equipment.ram || equipment.storage || equipment.harddisk_id || equipment.os_id || equipment.office_id) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    คุณสมบัติเฉพาะ
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {equipment.cpu && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">CPU</Label>
+                        <p className="text-sm">{equipment.cpu.cpu_name}</p>
+                      </div>
+                    )}
+                    {equipment.cpu_series && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">CPU Series</Label>
+                        <p className="text-sm">{equipment.cpu_series}</p>
+                      </div>
+                    )}
+                    {equipment.ram && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">RAM</Label>
+                        <p className="text-sm">{equipment.ram} GB</p>
+                      </div>
+                    )}
+                    {equipment.storage && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Storage</Label>
+                        <p className="text-sm">{equipment.storage}</p>
+                      </div>
+                    )}
+                    {equipment.harddisk && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Harddisk Type</Label>
+                        <p className="text-sm">{equipment.harddisk.hdd_type}</p>
+                      </div>
+                    )}
+                    {equipment.os && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Operating System</Label>
+                        <p className="text-sm">{equipment.os.os_name}</p>
+                      </div>
+                    )}
+                    {equipment.office && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Office</Label>
+                        <p className="text-sm">{equipment.office.office_name}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Purchase Information */}
             <Card>
               <CardHeader>
@@ -526,6 +607,14 @@ export default function EquipmentDetail() {
                 </div>
                 <Separator />
                 <div>
+                  <Label className="text-sm font-medium text-muted-foreground">ชื่อเจ้าของเครื่อง</Label>
+                  <p className="text-sm flex items-center gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    {equipment.current_employee_name || 'ยังไม่ได้กำหนด'}
+                  </p>
+                </div>
+                <Separator />
+                <div>
                   <Label className="text-sm font-medium text-muted-foreground">สถานที่ตั้ง</Label>
                   <p className="text-sm flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
@@ -534,40 +623,6 @@ export default function EquipmentDetail() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Computer Specifications (if applicable) */}
-            {(equipment.cpu || equipment.ram || equipment.storage) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    สเปคคอมพิวเตอร์
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {equipment.cpu && (
-                      <div>
-                        <Label className="text-sm font-medium text-muted-foreground">CPU</Label>
-                        <p className="text-sm">{equipment.cpu}</p>
-                      </div>
-                    )}
-                    {equipment.ram && (
-                      <div>
-                        <Label className="text-sm font-medium text-muted-foreground">RAM</Label>
-                        <p className="text-sm">{equipment.ram}</p>
-                      </div>
-                    )}
-                    {equipment.storage && (
-                      <div>
-                        <Label className="text-sm font-medium text-muted-foreground">Storage</Label>
-                        <p className="text-sm">{equipment.storage}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* History */}
             <Card>
