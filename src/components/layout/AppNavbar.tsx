@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
 
 export function AppNavbar() {
-  const { user, signOut } = useAuth()
+  const { user, userProfile, signOut } = useAuth()
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -40,6 +40,9 @@ export function AppNavbar() {
   }
 
   const getUserDisplayName = () => {
+    if (userProfile?.first_name && userProfile?.last_name) {
+      return `${userProfile.first_name} ${userProfile.last_name}`
+    }
     if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
       return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
     }
@@ -47,7 +50,7 @@ export function AppNavbar() {
   }
 
   const getUserRole = () => {
-    const role = user?.user_metadata?.role || 'user'
+    const role = userProfile?.role || user?.user_metadata?.role || 'user'
     const roleLabels = {
       'admin': 'ผู้ดูแลระบบ',
       'manager': 'ผู้จัดการ',
@@ -57,6 +60,9 @@ export function AppNavbar() {
   }
 
   const getInitials = () => {
+    if (userProfile?.first_name && userProfile?.last_name) {
+      return `${userProfile.first_name.charAt(0)}${userProfile.last_name.charAt(0)}`
+    }
     if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
       return `${user.user_metadata.first_name.charAt(0)}${user.user_metadata.last_name.charAt(0)}`
     }
