@@ -178,10 +178,76 @@ export default function EquipmentEdit() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div>
+                      <Label htmlFor="brand">ยี่ห้อ *</Label>
+                      <Input id="brand" value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} required />
+                    </div>
+                    <div>
+                      <Label htmlFor="model">รุ่น *</Label>
+                      <Input id="model" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} required />
+                    </div>
+                    <div>
+                      <Label htmlFor="serial_number">เลขประจำเครื่อง *</Label>
+                      <Input id="serial_number" value={formData.serial_number} onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })} required />
+                    </div>
+                    <div>
+                      <Label htmlFor="asset_number">เลขครุภัณฑ์</Label>
+                      <Input id="asset_number" value={formData.asset_number} onChange={(e) => setFormData({ ...formData, asset_number: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="purchase_date">วันที่ซื้อ</Label>
+                      <Input id="purchase_date" type="date" value={formData.purchase_date} onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="warranty_date">วันหมดประกัน</Label>
+                      <Input id="warranty_date" type="date" value={formData.warranty_date} onChange={(e) => setFormData({ ...formData, warranty_date: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="purchase_price">ราคาซื้อ (บาท)</Label>
+                      <Input id="purchase_price" type="number" value={formData.purchase_price} onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="location">สถานที่</Label>
+                      <Input id="location" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+                    </div>
                   </div>
-                  {/* ... other form fields ... */}
+                  <div>
+                    <Label htmlFor="notes">หมายเหตุ</Label>
+                    <Textarea id="notes" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={3} />
+                  </div>
                 </CardContent>
               </Card>
+              
+              <Card>
+                <CardHeader><CardTitle>ข้อมูลการมอบหมาย</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="department_id">แผนก</Label>
+                      <Select value={formData.department_id} onValueChange={(value) => setFormData({ ...formData, department_id: value })}>
+                        <SelectTrigger><SelectValue placeholder="เลือกแผนก" /></SelectTrigger>
+                        <SelectContent>
+                          {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="current_user_id">ผู้ใช้งาน</Label>
+                      <Select value={formData.current_user_id} onValueChange={(value) => setFormData({ ...formData, current_user_id: value })}>
+                        <SelectTrigger><SelectValue placeholder="เลือกผู้ใช้งาน" /></SelectTrigger>
+                        <SelectContent>
+                          {users.map((user) => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="current_employee_name">ชื่อเจ้าของเครื่องปัจจุบัน</Label>
+                      <Input id="current_employee_name" value={formData.current_employee_name} onChange={(e) => setFormData({ ...formData, current_employee_name: e.target.value })} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
               {/* ... other cards ... */}
             </div>
             <div className="space-y-6">

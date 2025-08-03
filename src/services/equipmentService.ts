@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client"
-import type { Equipment, EquipmentInsert, EquipmentUpdate, EquipmentStatus } from "@/types/database"
+import type { Equipment, EquipmentInsert, EquipmentUpdate, EquipmentStatus, EquipmentHistory } from "@/types/database"
 
 export type { EquipmentInsert, EquipmentUpdate }
 
@@ -10,6 +10,8 @@ export interface EquipmentWithDetails extends Equipment {
   assigned_user_name?: string
   status_text?: string
 }
+
+
 
 const getStatusText = (status: EquipmentStatus): string => {
   const statusMap: Record<EquipmentStatus, string> = {
@@ -156,5 +158,113 @@ export const EquipmentService = {
         throw error
     }
     return (count ?? 0) > 0
+  },
+
+  async getEquipmentHistory(equipmentId: string): Promise<(EquipmentHistory & { changed_by_name?: string; changed_by_role?: string })[]> {
+    const { data, error } = await supabase
+      .from('equipment_history')
+      .select(`
+        *,
+        users!equipment_history_changed_by_fkey (
+          first_name,
+          last_name,
+          role
+        )
+      `)
+      .eq('equipment_id', equipmentId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching equipment history:', error)
+      throw error
+    }
+
+    return (data || []).map(history => ({
+      ...history,
+      changed_by_name: history.users ? `${history.users.first_name ?? ''} ${history.users.last_name ?? ''}`.trim() : undefined,
+      changed_by_role: history.users?.role
+    })) as (EquipmentHistory & { changed_by_name?: string; changed_by_role?: string })[]
+  },
+
+  getFieldDisplayName(fieldName: string): string {
+    const fieldMap: Record<string, string> = {
+      name: 'ชื่อครุภัณฑ์',
+      type: 'ประเภท',
+      brand: 'ยี่ห้อ',
+      model: 'รุ่น',
+      serial_number: 'เลขประจำเครื่อง',
+      status: 'สถานะ',
+      department_id: 'แผนก',
+      current_user_id: 'ผู้ใช้งาน',
+      location: 'สถานที่',
+      purchase_date: 'วันที่ซื้อ',
+      warranty_date: 'วันหมดประกัน',
+      purchase_price: 'ราคาซื้อ',
+      notes: 'หมายเหตุ',
+      asset_number: 'เลขครุภัณฑ์'
+    }
+    return fieldMap[fieldName] || fieldName
+  },
+
+  formatValueForDisplay(fieldName: string, value: string): string {
+    if (!value) return '-'
+    
+    // Handle status values
+    if (fieldName === 'status') {
+      const statusMap: Record<string, string> = {
+        normal: 'ใช้งานปกติ',
+        maintenance: 'อยู่ระหว่างบำรุงรักษา',
+        damaged: 'ชำรุด',
+        disposed: 'จำหน่ายแล้ว',
+        borrowed: 'เบิกแล้ว'
+      }
+      return statusMap[value] || value
+    }
+
+    // Handle type values
+    if (fieldName === 'type') {
+      const typeMap: Record<string, string> = {
+        computer: 'คอมพิวเตอร์',
+        laptop: 'โน้ตบุ๊ค',
+        monitor: 'จอภาพ',
+        printer: 'เครื่องพิมพ์',
+        ups: 'UPS',
+        network_device: 'อุปกรณ์เครือข่าย'
+      }
+      return typeMap[value] || value
+    }
+
+    // Handle date values
+    if (fieldName === 'purchase_date' || fieldName === 'warranty_date') {
+      try {
+        return new Date(value).toLocaleDateString('th-TH', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      } catch {
+        return value
+      }
+    }
+
+    // Handle price values
+    if (fieldName === 'purchase_price') {
+      try {
+        const numValue = parseFloat(value)
+        return new Intl.NumberFormat('th-TH', {
+          style: 'currency',
+          currency: 'THB'
+        }).format(numValue)
+      } catch {
+        return value
+      }
+    }
+
+    // Handle department_id and current_user_id (these might be UUIDs, so we'll show as is for now)
+    if (fieldName === 'department_id' || fieldName === 'current_user_id') {
+      return value // In a real app, you might want to resolve these to names
+    }
+
+    return value
   }
 }

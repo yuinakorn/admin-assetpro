@@ -398,7 +398,7 @@ export class DashboardService {
         .from('equipment')
         .select(`
           department_id,
-          departments!inner(name, code)
+          departments(name, code)
         `)
 
       if (error) throw error

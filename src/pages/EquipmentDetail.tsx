@@ -8,6 +8,7 @@ import { ArrowLeft, Edit, Trash2, Calendar, MapPin, User, Building, Package, Dol
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
+import type { EquipmentHistory } from "@/types/database"
 import { ImageService } from "@/services/imageService"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -57,24 +58,14 @@ interface EquipmentDetail {
   current_user_role?: string
 }
 
-interface EquipmentHistory {
-  id: string
-  action_type: string
-  field_name?: string
-  old_value?: string
-  new_value?: string
-  change_reason?: string
-  created_at: string
-  changed_by_name?: string
-  changed_by_role?: string
-}
+
 
 export default function EquipmentDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const { toast } = useToast()
   const [equipment, setEquipment] = useState<EquipmentDetail | null>(null)
-  const [history, setHistory] = useState<EquipmentHistory[]>([])
+  const [history, setHistory] = useState<(EquipmentHistory & { changed_by_name?: string; changed_by_role?: string })[]>([])
   const [loading, setLoading] = useState(true)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
