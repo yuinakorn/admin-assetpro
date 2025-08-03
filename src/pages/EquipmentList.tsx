@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useAuth } from "@/contexts/AuthContext"
 
-type SortField = 'equipment_code' | 'name' | 'type' | 'department_name' | 'status' | 'current_user_name'
+type SortField = 'equipment_code' | 'name' | 'category_name' | 'department_name' | 'status' | 'current_user_name'
 type SortDirection = 'asc' | 'desc'
 
 interface SortConfig {
@@ -26,7 +26,7 @@ interface Equipment {
   id: string
   equipment_code: string
   name: string
-  type: string
+  category_name?: string
   department_name?: string
   status: string
   current_user_name?: string
@@ -331,11 +331,11 @@ export default function EquipmentList() {
                   <TableHead>
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort('type')}
+                      onClick={() => handleSort('category_name')}
                       className="h-auto p-0 font-semibold hover:bg-transparent"
                     >
                       ประเภท
-                      {getSortIcon('type')}
+                      {getSortIcon('category_name')}
                     </Button>
                   </TableHead>
                   <TableHead>
@@ -376,7 +376,7 @@ export default function EquipmentList() {
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.equipment_code}</TableCell>
                     <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.type}</TableCell>
+                    <TableCell>{item.category_name || '-'}</TableCell>
                     <TableCell>{item.department_name || '-'}</TableCell>
                     <TableCell>{getStatusBadge(item.status)}</TableCell>
                     <TableCell>{item.current_user_name || '-'}</TableCell>

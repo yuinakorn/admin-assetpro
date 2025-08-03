@@ -33,7 +33,7 @@ interface EquipmentDetail {
   id: string
   equipment_code: string
   name: string
-  type: string
+  category_id?: string
   brand: string
   model: string
   serial_number: string
@@ -56,6 +56,9 @@ interface EquipmentDetail {
   department_code?: string
   current_user_name?: string
   current_user_role?: string
+  equipment_categories?: {
+    name: string
+  }
 }
 
 
@@ -193,17 +196,7 @@ export default function EquipmentDetail() {
     )
   }
 
-  const getTypeText = (type: string) => {
-    const typeMap: Record<string, string> = {
-      computer: "คอมพิวเตอร์",
-      laptop: "โน้ตบุ๊ค",
-      monitor: "จอภาพ",
-      printer: "เครื่องพิมพ์",
-      ups: "UPS",
-      network_device: "อุปกรณ์เครือข่าย"
-    }
-    return typeMap[type] || type
-  }
+
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "-"
@@ -405,7 +398,7 @@ export default function EquipmentDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">ประเภท</Label>
-                    <p className="text-sm">{getTypeText(equipment.type)}</p>
+                    <p className="text-sm">{equipment.equipment_categories?.name || '-'}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">สถานะ</Label>
