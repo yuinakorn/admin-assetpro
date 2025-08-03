@@ -68,10 +68,10 @@ export class DashboardService {
   // Get dashboard statistics
   static async getDashboardStats(): Promise<DashboardStats> {
     try {
-      // Get equipment data
+      // Get equipment data with category information using raw query
       const { data: equipment, error: equipmentError } = await supabase
         .from('equipment')
-        .select('status, warranty_date, type')
+        .select('status, warranty_date, category_id')
 
       if (equipmentError) throw equipmentError
 
@@ -93,9 +93,9 @@ export class DashboardService {
         console.warn('Error counting departments:', departmentsError)
       }
 
-      // Get unique equipment types count
-      const uniqueTypes = new Set(equipment.map(item => item.type))
-      const totalEquipmentTypes = uniqueTypes.size
+      // Count unique categories from equipment data
+      const uniqueCategories = new Set(equipment.map((item: any) => item.category_id).filter(Boolean))
+      const totalEquipmentTypes = uniqueCategories.size
 
       const now = new Date()
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
@@ -103,20 +103,20 @@ export class DashboardService {
 
       const stats = {
         total_equipment: equipment.length,
-        normal_equipment: equipment.filter(item => item.status === 'normal').length,
-        maintenance_equipment: equipment.filter(item => item.status === 'maintenance').length,
-        damaged_equipment: equipment.filter(item => item.status === 'damaged').length,
-        disposed_equipment: equipment.filter(item => item.status === 'disposed').length,
-        borrowed_equipment: equipment.filter(item => item.status === 'borrowed').length,
+        normal_equipment: equipment.filter((item: any) => item.status === 'normal').length,
+        maintenance_equipment: equipment.filter((item: any) => item.status === 'maintenance').length,
+        damaged_equipment: equipment.filter((item: any) => item.status === 'damaged').length,
+        disposed_equipment: equipment.filter((item: any) => item.status === 'disposed').length,
+        borrowed_equipment: equipment.filter((item: any) => item.status === 'borrowed').length,
         total_users: usersCount || 0,
         total_departments: departmentsCount || 0,
         total_equipment_types: totalEquipmentTypes,
-        expiring_warranty: equipment.filter(item => {
+        expiring_warranty: equipment.filter((item: any) => {
           if (!item.warranty_date) return false
           const warrantyDate = new Date(item.warranty_date)
           return warrantyDate > now && warrantyDate <= thirtyDaysFromNow
         }).length,
-        expired_warranty: equipment.filter(item => {
+        expired_warranty: equipment.filter((item: any) => {
           if (!item.warranty_date) return false
           const warrantyDate = new Date(item.warranty_date)
           return warrantyDate <= now
@@ -357,32 +357,38 @@ export class DashboardService {
     try {
       const { data, error } = await supabase
         .from('equipment')
-        .select('type')
+        .select(`
+          category_id,
+          equipment_categories(name, code)
+        `)
         .eq('status', 'normal') // Only count active equipment
 
       if (error) throw error
 
-      // Count by type
-      const typeCounts: Record<string, number> = {}
-      data.forEach(item => {
-        typeCounts[item.type] = (typeCounts[item.type] || 0) + 1
+      // Count by category
+      const categoryCounts: Record<string, { name: string; code: string; count: number }> = {}
+      data.forEach((item: any) => {
+        if (item.equipment_categories) {
+          const categoryKey = item.equipment_categories.name
+          if (!categoryCounts[categoryKey]) {
+            categoryCounts[categoryKey] = {
+              name: item.equipment_categories.name,
+              code: item.equipment_categories.code,
+              count: 0
+            }
+          }
+          categoryCounts[categoryKey].count++
+        }
       })
 
-      // Type labels and colors
-      const typeConfig = {
-        computer: { label: 'คอมพิวเตอร์', color: '#3B82F6' },
-        laptop: { label: 'โน้ตบุ๊ค', color: '#10B981' },
-        monitor: { label: 'จอภาพ', color: '#8B5CF6' },
-        printer: { label: 'เครื่องพิมพ์', color: '#F59E0B' },
-        ups: { label: 'UPS', color: '#EF4444' },
-        network_device: { label: 'อุปกรณ์เครือข่าย', color: '#6B7280' }
-      }
+      // Generate colors
+      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#6B7280', '#EC4899', '#14B8A6']
 
-      return Object.entries(typeCounts).map(([type, count]) => ({
-        type,
-        type_label: typeConfig[type as keyof typeof typeConfig]?.label || type,
-        count,
-        color: typeConfig[type as keyof typeof typeConfig]?.color || '#94A3B8'
+      return Object.values(categoryCounts).map((category, index) => ({
+        type: category.code,
+        type_label: category.name,
+        count: category.count,
+        color: colors[index % colors.length]
       }))
 
     } catch (error) {
