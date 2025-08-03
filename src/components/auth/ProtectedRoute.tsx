@@ -12,7 +12,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   const { user, userProfile, loading } = useAuth()
   const location = useLocation()
 
-  // Show loading spinner while checking authentication
+  // Show loading spinner while initializing
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">

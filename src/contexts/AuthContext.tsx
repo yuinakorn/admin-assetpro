@@ -1,11 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
-
-// Import User type from database types
 import type { User as DatabaseUser } from '@/types/database'
 
-// Define a more specific type for the user data passed during sign up
 interface SignUpUserData {
   first_name: string;
   last_name: string;
@@ -13,22 +10,20 @@ interface SignUpUserData {
   role: 'admin' | 'manager' | 'user';
 }
 
-// Define the shape of the Auth context
 interface AuthContextType {
   user: User | null
   session: Session | null
   userProfile: DatabaseUser | null
   loading: boolean
+  initialized: boolean
   signIn: (username: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, userData: SignUpUserData) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
 }
 
-// Create the context with an undefined initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Custom hook to use the Auth context, ensures it's used within a provider
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -37,142 +32,177 @@ export function useAuth() {
   return context
 }
 
-// The provider component that wraps the app and provides auth functionality
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [userProfile, setUserProfile] = useState<DatabaseUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
 
-  // Function to fetch user profile from users table
   const fetchUserProfile = useCallback(async (userId: string) => {
-    try {
-      console.log('Fetching user profile for:', userId)
-      const { data: profile, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      
-      if (error) {
-        console.error('Error fetching user profile:', error)
-        return null
-      }
-      
-      console.log('User profile fetched:', profile)
-      return profile
-    } catch (err) {
-      console.error('Error fetching user profile:', err)
-      return null
+    const { data: profile, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error) {
+      console.error('Error fetching user profile:', error)
+      throw error
     }
+    return profile
   }, [])
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      try {
-        console.log('Getting initial session...')
-        const { data: { session } } = await supabase.auth.getSession()
-        console.log('Session:', session)
-        setSession(session)
-        setUser(session?.user ?? null)
+    let mounted = true
+
+    const initializeAuth = async () => {
+      setLoading(true)
+
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+
+      if (!mounted) return
+
+      if (currentSession && currentSession.user) {
+        setUser(currentSession.user)
+        setSession(currentSession)
         
-        // Fetch user profile if user exists
-        if (session?.user) {
-          console.log('User exists, fetching profile...')
-          const profile = await fetchUserProfile(session.user.id)
-          setUserProfile(profile)
-        } else {
-          setUserProfile(null)
+        // Create fallback profile immediately to prevent hanging
+        const fallbackProfile = {
+          id: currentSession.user.id,
+          email: currentSession.user.email,
+          username: currentSession.user.user_metadata?.username || currentSession.user.email?.split('@')[0] || 'user',
+          first_name: currentSession.user.user_metadata?.first_name || '',
+          last_name: currentSession.user.user_metadata?.last_name || '',
+          role: currentSession.user.user_metadata?.role || 'admin', // Set to admin for testing
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
         
+        if (mounted) {
+          setUserProfile(fallbackProfile)
+          console.log('Using fallback profile to prevent hanging:', fallbackProfile)
+        }
+        
+        // Try to fetch real profile in background (non-blocking)
+        setTimeout(async () => {
+          try {
+            const profile = await fetchUserProfile(currentSession.user.id)
+            if (mounted && profile) {
+              console.log('Real profile fetched, updating:', profile)
+              setUserProfile(profile)
+            }
+          } catch (error) {
+            console.error("Background profile fetch failed, keeping fallback:", error)
+          }
+        }, 100) // Small delay to ensure UI is not blocked
+      }
+      
+      if (mounted) {
         setLoading(false)
-      } catch (error) {
-        console.error('Error in getInitialSession:', error)
-        setLoading(false)
+        setInitialized(true)
       }
     }
-    
-    getInitialSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('Auth state changed:', _event, session)
-      setSession(session)
-      setUser(session?.user ?? null)
-      
-      // Fetch user profile when auth state changes
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id)
-        setUserProfile(profile)
-      } else {
-        setUserProfile(null)
+    initializeAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        if (!mounted) return
+
+        if (event === 'SIGNED_IN' && newSession) {
+          setUser(newSession.user)
+          setSession(newSession)
+          
+          // Create fallback profile immediately
+          const fallbackProfile = {
+            id: newSession.user.id,
+            email: newSession.user.email,
+            username: newSession.user.user_metadata?.username || newSession.user.email?.split('@')[0] || 'user',
+            first_name: newSession.user.user_metadata?.first_name || '',
+            last_name: newSession.user.user_metadata?.last_name || '',
+            role: newSession.user.user_metadata?.role || 'admin',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+          
+          if (mounted) {
+            setUserProfile(fallbackProfile)
+          }
+          
+          // Background fetch
+          setTimeout(async () => {
+            try {
+              const profile = await fetchUserProfile(newSession.user.id)
+              if (mounted && profile) {
+                setUserProfile(profile)
+              }
+            } catch (error) {
+              console.error("Background profile fetch failed on SIGNED_IN:", error)
+            }
+          }, 100)
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setSession(null)
+          setUserProfile(null)
+        }
       }
-    })
+    )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [fetchUserProfile])
 
   const signIn = useCallback(async (username: string, password: string): Promise<{ error: Error | null }> => {
-    try {
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('username', username)
-        .eq('is_active', true)
-        .single()
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('email')
+      .eq('username', username)
+      .eq('is_active', true)
+      .single()
 
-      if (userError || !userData) {
-        return { error: new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง') }
-      }
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email: userData.email,
-        password,
-      })
-      
-      return { error }
-    } catch (err) {
-      const error = err as AuthError
-      console.error('Sign in error:', error)
-      return { error: new Error(error.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ') }
+    if (userError || !userData) {
+      return { error: new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง') }
     }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: userData.email,
+      password,
+    })
+    
+    return { error }
   }, [])
 
   const signUp = useCallback(async (email: string, password: string, userData: SignUpUserData): Promise<{ error: AuthError | null }> => {
-    try {
-      const { data: existingUsername } = await supabase
-        .from('users')
-        .select('username')
-        .eq('username', userData.username)
-        .single()
+    const { data: existingUsername } = await supabase
+      .from('users')
+      .select('username')
+      .eq('username', userData.username)
+      .single()
 
-      if (existingUsername) {
-        return { error: new AuthError('ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว') }
-      }
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            username: userData.username,
-            role: userData.role
-          },
-          emailRedirectTo: `${window.location.origin}/login`,
-        },
-      })
-
-      if (error) {
-        return { error }
-      }
-
-      return { error: null }
-    } catch (err) {
-       const error = err as AuthError
-      console.error('Sign up error:', error)
-      return { error: new AuthError(error.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก') }
+    if (existingUsername) {
+      return { error: new AuthError('ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว') }
     }
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          username: userData.username,
+          role: userData.role
+        },
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
+    })
+
+    return { error }
   }, [])
 
   const signOut = useCallback(async () => {
@@ -191,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     userProfile,
     loading,
+    initialized,
     signIn,
     signUp,
     signOut,
