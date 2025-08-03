@@ -31,12 +31,5 @@ SET category_id = (
 )
 WHERE e.category_id IS NULL;
 
--- Step 4: Drop the old 'type' column as it's now redundant.
-ALTER TABLE public.equipment
-DROP COLUMN type;
-
--- Step 5: Drop the now-unused equipment_type enum.
-DROP TYPE public.equipment_type;
-
--- Step 6: Create an index on the new foreign key for performance.
+-- Step 4: Create an index on the new foreign key for performance.
 CREATE INDEX IF NOT EXISTS idx_equipment_category_id ON public.equipment(category_id);

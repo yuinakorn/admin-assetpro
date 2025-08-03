@@ -193,6 +193,48 @@ export const EquipmentService = {
     })) as (EquipmentHistory & { changed_by_name?: string; changed_by_role?: string })[]
   },
 
+  async getAllEquipmentHistory(): Promise<(EquipmentHistory & { 
+    changed_by_name?: string; 
+    changed_by_role?: string;
+    equipment_name?: string;
+    equipment_code?: string;
+  })[]> {
+    const { data, error } = await supabase
+      .from('equipment_history')
+      .select(`
+        *,
+        users!equipment_history_changed_by_fkey (
+          first_name,
+          last_name,
+          role
+        ),
+        equipment!equipment_history_equipment_id_fkey (
+          name,
+          equipment_code
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (error) {
+      console.error('Error fetching all equipment history:', error)
+      throw error
+    }
+
+    return (data || []).map(history => ({
+      ...history,
+      changed_by_name: history.users ? `${history.users.first_name ?? ''} ${history.users.last_name ?? ''}`.trim() : undefined,
+      changed_by_role: history.users?.role,
+      equipment_name: history.equipment?.name,
+      equipment_code: history.equipment?.equipment_code
+    })) as (EquipmentHistory & { 
+      changed_by_name?: string; 
+      changed_by_role?: string;
+      equipment_name?: string;
+      equipment_code?: string;
+    })[]
+  },
+
   getFieldDisplayName(fieldName: string): string {
     const fieldMap: Record<string, string> = {
       name: 'ชื่อครุภัณฑ์',
