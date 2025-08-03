@@ -12,6 +12,9 @@ import { EquipmentService } from "@/services/equipmentService"
 import { EquipmentInsert } from "@/types/database"
 import { EquipmentCategoryService } from "@/services/equipmentCategoryService"
 import { cpuService, CPU } from "@/services/cpuService"
+import { harddiskService, Harddisk } from "@/services/harddiskService"
+import { osService, OS } from "@/services/osService"
+import { officeService, Office } from "@/services/officeService"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { useToast } from "@/hooks/use-toast"
 
@@ -36,7 +39,10 @@ export default function EquipmentAdd() {
     location: "",
     cpu_id: "",
     cpu_series: "",
-    ram: ""
+    ram: "",
+    harddisk_id: "",
+    os_id: "",
+    office_id: ""
   })
 
   const [loading, setLoading] = useState(false)
@@ -44,10 +50,16 @@ export default function EquipmentAdd() {
   const [users, setUsers] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [cpus, setCpus] = useState<CPU[]>([])
+  const [harddisks, setHarddisks] = useState<Harddisk[]>([])
+  const [oses, setOses] = useState<OS[]>([])
+  const [offices, setOffices] = useState<Office[]>([])
   const [departmentsLoading, setDepartmentsLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(true)
   const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [cpusLoading, setCpusLoading] = useState(true)
+  const [harddisksLoading, setHarddisksLoading] = useState(true)
+  const [osesLoading, setOsesLoading] = useState(true)
+  const [officesLoading, setOfficesLoading] = useState(true)
   const [createdEquipmentId, setCreatedEquipmentId] = useState<string | null>(null)
 
   // Load departments, users, and categories on component mount
@@ -57,7 +69,10 @@ export default function EquipmentAdd() {
         loadDepartments(),
         loadUsers(),
         loadCategories(),
-        loadCpus()
+        loadCpus(),
+        loadHarddisks(),
+        loadOses(),
+        loadOffices()
       ])
     }
     loadData()
@@ -132,8 +147,59 @@ export default function EquipmentAdd() {
     }
   }, [toast])
 
+  const loadHarddisks = useCallback(async () => {
+    try {
+      setHarddisksLoading(true)
+      const data = await harddiskService.getAllHarddisks()
+      setHarddisks(data)
+    } catch (error) {
+      console.error('Error loading harddisks:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดข้อมูล Harddisk ได้",
+        variant: "destructive"
+      })
+    } finally {
+      setHarddisksLoading(false)
+    }
+  }, [toast])
+
+  const loadOses = useCallback(async () => {
+    try {
+      setOsesLoading(true)
+      const data = await osService.getAllOS()
+      setOses(data)
+    } catch (error) {
+      console.error('Error loading oses:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดข้อมูล OS ได้",
+        variant: "destructive"
+      })
+    } finally {
+      setOsesLoading(false)
+    }
+  }, [toast])
+
+  const loadOffices = useCallback(async () => {
+    try {
+      setOfficesLoading(true)
+      const data = await officeService.getAllOffices()
+      setOffices(data)
+    } catch (error) {
+      console.error('Error loading offices:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดข้อมูล Office ได้",
+        variant: "destructive"
+      })
+    } finally {
+      setOfficesLoading(false)
+    }
+  }, [toast])
+
   // Show loading state while initial data is loading
-  if (departmentsLoading || usersLoading || categoriesLoading || cpusLoading) {
+  if (departmentsLoading || usersLoading || categoriesLoading || cpusLoading || harddisksLoading || osesLoading || officesLoading) {
     return (
       <DashboardLayout>
         <div className="space-y-6">
@@ -166,8 +232,13 @@ export default function EquipmentAdd() {
     )
   }
 
-  const selectedCategoryName = categories.find(c => c.id === formData.category_id)?.name.toLowerCase() || ''
-  const showComputerFields = ['computer', 'laptop', 'aio'].includes(selectedCategoryName)
+  const selectedCategoryName = categories.find(c => c.id === formData.category_id)?.name || ''
+  const showComputerFields = ['คอมพิวเตอร์', 'โน้ตบุ๊ค'].includes(selectedCategoryName)
+  
+  // Debug log
+  console.log('Selected category ID:', formData.category_id)
+  console.log('Selected category name:', selectedCategoryName)
+  console.log('Show computer fields:', showComputerFields)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -224,12 +295,18 @@ export default function EquipmentAdd() {
         hostname: null,
         qr_code: null,
         supplier: null,
+        harddisk_id: null,
+        os_id: null,
+        office_id: null,
       };
 
       if (showComputerFields) {
         equipmentData.cpu_id = formData.cpu_id || null
         equipmentData.cpu_series = formData.cpu_series || null
         equipmentData.ram = formData.ram ? parseInt(formData.ram, 10) : null
+        equipmentData.harddisk_id = formData.harddisk_id || null
+        equipmentData.os_id = formData.os_id || null
+        equipmentData.office_id = formData.office_id || null
       }
 
       const createdEquipment = await EquipmentService.createEquipment(equipmentData as EquipmentInsert)
@@ -443,6 +520,63 @@ export default function EquipmentAdd() {
                         value={formData.ram}
                         onChange={(e) => setFormData({ ...formData, ram: e.target.value })}
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="harddisk">Harddisk</Label>
+                      <Select
+                        value={formData.harddisk_id}
+                        onValueChange={(value) => setFormData({ ...formData, harddisk_id: value })}
+                        disabled={harddisksLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={harddisksLoading ? "กำลังโหลด..." : "เลือก Harddisk"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                                                     {harddisks.map((harddisk) => (
+                             <SelectItem key={harddisk.id} value={harddisk.id!}>
+                               {harddisk.hdd_type}
+                             </SelectItem>
+                           ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="os">Operating System</Label>
+                      <Select
+                        value={formData.os_id}
+                        onValueChange={(value) => setFormData({ ...formData, os_id: value })}
+                        disabled={osesLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={osesLoading ? "กำลังโหลด..." : "เลือก Operating System"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {oses.map((os) => (
+                            <SelectItem key={os.id} value={os.id!}>
+                              {os.os_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="office">Office</Label>
+                      <Select
+                        value={formData.office_id}
+                        onValueChange={(value) => setFormData({ ...formData, office_id: value })}
+                        disabled={officesLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={officesLoading ? "กำลังโหลด..." : "เลือก Office"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {offices.map((office) => (
+                            <SelectItem key={office.id} value={office.id!}>
+                              {office.office_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </CardContent>
                 </Card>

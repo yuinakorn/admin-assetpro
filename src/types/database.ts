@@ -87,6 +87,9 @@ export interface Equipment {
   gpu?: string;
   operating_system?: string;
   product_key?: string;
+  harddisk_id?: string;
+  os_id?: string;
+  office_id?: string;
   
   // Network information
   ip_address?: string;
