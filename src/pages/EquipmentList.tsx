@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { Plus, Search, Edit, Trash2, Eye, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronRight } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
@@ -231,6 +231,89 @@ export default function EquipmentList() {
     return items
   }
 
+  // Mobile card component for equipment items
+  const EquipmentCard = ({ item }: { item: Equipment }) => (
+    <Card className="mb-4">
+      <CardContent className="p-4">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-lg truncate">{item.name}</h3>
+              <p className="text-sm text-muted-foreground">{item.equipment_code}</p>
+            </div>
+            <div className="flex items-center gap-1 ml-2">
+              {permissions.canViewEquipment && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/equipment/${item.id}`)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
+              )}
+              {permissions.canEditEquipment && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/equipment/edit/${item.id}`)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+              )}
+              {permissions.canDeleteEquipment && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        คุณต้องการลบครุภัณฑ์ "{item.name}" ใช่หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(item.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        ลบ
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="text-muted-foreground">ประเภท:</span>
+              <p className="font-medium">{item.category_name || '-'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">แผนก:</span>
+              <p className="font-medium">{item.department_name || '-'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">สถานะ:</span>
+              <div className="mt-1">{getStatusBadge(item.status)}</div>
+            </div>
+            <div>
+              <span className="text-muted-foreground">ผู้ใช้งาน:</span>
+              <p className="font-medium">{item.current_user_name || '-'}</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -247,15 +330,15 @@ export default function EquipmentList() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">รายการครุภัณฑ์</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">รายการครุภัณฑ์</h1>
             <p className="text-muted-foreground">
               จัดการครุภัณฑ์คอมพิวเตอร์ทั้งหมดในระบบ
             </p>
           </div>
           {permissions.canAddEquipment && (
-            <Button onClick={() => navigate("/equipment/add")}>
+            <Button onClick={() => navigate("/equipment/add")} className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               เพิ่มครุภัณฑ์
             </Button>
@@ -271,7 +354,7 @@ export default function EquipmentList() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -299,159 +382,199 @@ export default function EquipmentList() {
           </CardContent>
         </Card>
 
-        {/* Equipment Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>รายการครุภัณฑ์ ({filteredEquipment.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('equipment_code')}
-                      className="h-auto p-0 font-semibold hover:bg-transparent"
-                    >
-                      รหัสครุภัณฑ์
-                      {getSortIcon('equipment_code')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('name')}
-                      className="h-auto p-0 font-semibold hover:bg-transparent"
-                    >
-                      ชื่อครุภัณฑ์
-                      {getSortIcon('name')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('category_name')}
-                      className="h-auto p-0 font-semibold hover:bg-transparent"
-                    >
-                      ประเภท
-                      {getSortIcon('category_name')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('department_name')}
-                      className="h-auto p-0 font-semibold hover:bg-transparent"
-                    >
-                      แผนก
-                      {getSortIcon('department_name')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('status')}
-                      className="h-auto p-0 font-semibold hover:bg-transparent"
-                    >
-                      สถานะ
-                      {getSortIcon('status')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('current_user_name')}
-                      className="h-auto p-0 font-semibold hover:bg-transparent"
-                    >
-                      ผู้ใช้งาน
-                      {getSortIcon('current_user_name')}
-                    </Button>
-                  </TableHead>
-                  <TableHead>การดำเนินการ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentEquipment.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.equipment_code}</TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.category_name || '-'}</TableCell>
-                    <TableCell>{item.department_name || '-'}</TableCell>
-                    <TableCell>{getStatusBadge(item.status)}</TableCell>
-                    <TableCell>{item.current_user_name || '-'}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+        {/* Equipment List - Mobile View */}
+        <div className="block lg:hidden">
+          <Card>
+            <CardHeader>
+              <CardTitle>รายการครุภัณฑ์ ({filteredEquipment.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {currentEquipment.length > 0 ? (
+                <div className="space-y-4">
+                  {currentEquipment.map((item) => (
+                    <EquipmentCard key={item.id} item={item} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไขการค้นหา
+                </div>
+              )}
+
+              {/* Pagination for Mobile */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
+                  <div className="text-sm text-muted-foreground text-center sm:text-left">
+                    แสดง {startIndex + 1} ถึง {Math.min(endIndex, filteredEquipment.length)} จาก {filteredEquipment.length} รายการ
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      {renderPaginationItems()}
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Equipment Table - Desktop View */}
+        <div className="hidden lg:block">
+          <Card>
+            <CardHeader>
+              <CardTitle>รายการครุภัณฑ์ ({filteredEquipment.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/equipment/${item.id}`)}
+                          onClick={() => handleSort('equipment_code')}
+                          className="h-auto p-0 font-semibold hover:bg-transparent"
                         >
-                          <Eye className="w-4 h-4" />
+                          รหัสครุภัณฑ์
+                          {getSortIcon('equipment_code')}
                         </Button>
-                        {permissions.canEditEquipment && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/equipment/edit/${item.id}`)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {permissions.canDeleteEquipment && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="w-4 h-4" />
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('name')}
+                          className="h-auto p-0 font-semibold hover:bg-transparent"
+                        >
+                          ชื่อครุภัณฑ์
+                          {getSortIcon('name')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('category_name')}
+                          className="h-auto p-0 font-semibold hover:bg-transparent"
+                        >
+                          ประเภท
+                          {getSortIcon('category_name')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('department_name')}
+                          className="h-auto p-0 font-semibold hover:bg-transparent"
+                        >
+                          แผนก
+                          {getSortIcon('department_name')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('status')}
+                          className="h-auto p-0 font-semibold hover:bg-transparent"
+                        >
+                          สถานะ
+                          {getSortIcon('status')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('current_user_name')}
+                          className="h-auto p-0 font-semibold hover:bg-transparent"
+                        >
+                          ผู้ใช้งาน
+                          {getSortIcon('current_user_name')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>การดำเนินการ</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentEquipment.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.equipment_code}</TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.category_name || '-'}</TableCell>
+                        <TableCell>{item.department_name || '-'}</TableCell>
+                        <TableCell>{getStatusBadge(item.status)}</TableCell>
+                        <TableCell>{item.current_user_name || '-'}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/equipment/${item.id}`)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {permissions.canEditEquipment && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/equipment/edit/${item.id}`)}
+                              >
+                                <Edit className="w-4 h-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  คุณต้องการลบครุภัณฑ์ "{item.name}" ใช่หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(item.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  ลบ
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            
-            {filteredEquipment.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไขการค้นหา
+                            )}
+                            {permissions.canDeleteEquipment && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      คุณต้องการลบครุภัณฑ์ "{item.name}" ใช่หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDelete(item.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      ลบ
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
-                <div className="text-sm text-muted-foreground">
-                  แสดง {startIndex + 1} ถึง {Math.min(endIndex, filteredEquipment.length)} จาก {filteredEquipment.length} รายการ
+              
+              {filteredEquipment.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไขการค้นหา
                 </div>
-                <Pagination>
-                  <PaginationContent>
-                    {renderPaginationItems()}
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+
+              {/* Pagination for Desktop */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6">
+                  <div className="text-sm text-muted-foreground">
+                    แสดง {startIndex + 1} ถึง {Math.min(endIndex, filteredEquipment.length)} จาก {filteredEquipment.length} รายการ
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      {renderPaginationItems()}
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   )
