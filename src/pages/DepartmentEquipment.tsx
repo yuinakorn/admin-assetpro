@@ -116,7 +116,7 @@ export default function DepartmentEquipment() {
         item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.assigned_user_name && item.assigned_user_name.toLowerCase().includes(searchTerm.toLowerCase()))
+        (item.current_employee_name && item.current_employee_name.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     }
 
@@ -399,7 +399,7 @@ export default function DepartmentEquipment() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input 
-                    placeholder="ค้นหาครุภัณฑ์, รหัส, ยี่ห้อ, รุ่น, เลขประจำเครื่อง..." 
+                    placeholder="ค้นหาครุภัณฑ์, รหัส, ยี่ห้อ, รุ่น, เลขประจำเครื่อง, ชื่อพนักงาน..." 
                     className="pl-10"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -539,9 +539,9 @@ export default function DepartmentEquipment() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {item.assigned_user_name ? (
+                              {item.current_employee_name ? (
                                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  {item.assigned_user_name}
+                                  {item.current_employee_name}
                                 </Badge>
                               ) : (
                                 <span className="text-muted-foreground">-</span>
