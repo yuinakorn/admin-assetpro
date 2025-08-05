@@ -731,6 +731,12 @@ export default function EquipmentAdd() {
                     <ImageUpload 
                       equipmentId={createdEquipmentId}
                       maxImages={10}
+                      compressionOptions={{
+                        maxWidth: 1920,
+                        maxHeight: 1080,
+                        quality: 0.8,
+                        maxFileSize: 2 * 1024 * 1024 // 2MB
+                      }}
                       onImagesUploaded={(images) => {
                         console.log('Images uploaded:', images)
                         toast({

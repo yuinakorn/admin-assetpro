@@ -39,7 +39,7 @@ export default function EquipmentList() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'equipment_code', direction: 'asc' })
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'equipment_code', direction: 'desc' })
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
   const { toast } = useToast()

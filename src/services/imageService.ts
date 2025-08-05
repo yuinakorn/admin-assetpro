@@ -214,6 +214,14 @@ export class ImageService {
   }
 
   /**
+   * ตรวจสอบขนาดไฟล์หลังจากบีบอัด
+   */
+  static isValidCompressedFile(file: File): boolean {
+    const maxSize = 5 * 1024 * 1024 // 5MB สำหรับไฟล์ที่บีบอัดแล้ว
+    return file.size <= maxSize
+  }
+
+  /**
    * สร้าง preview URL สำหรับรูปภาพ
    */
   static createPreviewUrl(file: File): string {

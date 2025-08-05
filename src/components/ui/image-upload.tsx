@@ -2,8 +2,9 @@ import React, { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { X, Upload, Camera, Image as ImageIcon, Trash2, Star } from 'lucide-react'
+import { X, Upload, Camera, Image as ImageIcon, Trash2, Star, Zap, Loader2 } from 'lucide-react'
 import { ImageService, ImageUploadResult } from '@/services/imageService'
+import { ImageCompression, CompressedImageResult } from '@/lib/imageCompression'
 import { useToast } from '@/hooks/use-toast'
 
 interface ImageUploadProps {
@@ -11,6 +12,12 @@ interface ImageUploadProps {
   onImagesUploaded?: (images: ImageUploadResult[]) => void
   maxImages?: number
   className?: string
+  compressionOptions?: {
+    maxWidth?: number
+    maxHeight?: number
+    quality?: number
+    maxFileSize?: number
+  }
 }
 
 interface ImagePreview {
@@ -20,36 +27,48 @@ interface ImagePreview {
   isPrimary: boolean
   isUploading: boolean
   uploadProgress?: number
+  compressionInfo?: {
+    originalSize: number
+    compressedSize: number
+    compressionRatio: number
+    width: number
+    height: number
+  }
 }
 
 export function ImageUpload({ 
   equipmentId, 
   onImagesUploaded, 
   maxImages = 10,
-  className = '' 
+  className = '',
+  compressionOptions = {}
 }: ImageUploadProps) {
   const [images, setImages] = useState<ImagePreview[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
-  const handleFileSelect = useCallback((files: FileList | null) => {
+  const handleFileSelect = useCallback(async (files: FileList | null) => {
     if (!files) return
 
     const newImages: ImagePreview[] = []
     const currentCount = images.length
+    const filesArray = Array.from(files)
 
-    Array.from(files).forEach((file, index) => {
-      if (currentCount + index >= maxImages) {
-        toast({
-          title: "เกินจำนวนรูปภาพที่อนุญาต",
-          description: `สามารถอัพโหลดได้สูงสุด ${maxImages} รูป`,
-          variant: "destructive"
-        })
-        return
-      }
+    // ตรวจสอบจำนวนไฟล์
+    if (currentCount + filesArray.length > maxImages) {
+      toast({
+        title: "เกินจำนวนรูปภาพที่อนุญาต",
+        description: `สามารถอัพโหลดได้สูงสุด ${maxImages} รูป`,
+        variant: "destructive"
+      })
+      return
+    }
 
+    // ตรวจสอบไฟล์
+    for (const file of filesArray) {
       if (!ImageService.isValidImageFile(file)) {
         toast({
           title: "ไฟล์ไม่ถูกต้อง",
@@ -58,19 +77,63 @@ export function ImageUpload({
         })
         return
       }
+    }
 
-      const previewUrl = ImageService.createPreviewUrl(file)
-      newImages.push({
-        id: `preview-${Date.now()}-${index}`,
-        file,
-        previewUrl,
-        isPrimary: currentCount + index === 0, // รูปแรกเป็นรูปหลัก
-        isUploading: false
+    setIsCompressing(true)
+
+    try {
+      // บีบอัดรูปภาพ
+      const compressionResults = await ImageCompression.compressImages(filesArray, {
+        maxWidth: 1920,
+        maxHeight: 1080,
+        quality: 0.8,
+        maxFileSize: 2 * 1024 * 1024, // 2MB
+        ...compressionOptions
       })
-    })
 
-    setImages(prev => [...prev, ...newImages])
-  }, [images, maxImages, toast])
+      // สร้าง preview สำหรับรูปภาพที่บีบอัดแล้ว
+      compressionResults.forEach((result, index) => {
+        const previewUrl = ImageService.createPreviewUrl(result.file)
+        newImages.push({
+          id: `preview-${Date.now()}-${index}`,
+          file: result.file,
+          previewUrl,
+          isPrimary: currentCount + index === 0, // รูปแรกเป็นรูปหลัก
+          isUploading: false,
+          compressionInfo: {
+            originalSize: result.originalSize,
+            compressedSize: result.compressedSize,
+            compressionRatio: result.compressionRatio,
+            width: result.width,
+            height: result.height
+          }
+        })
+      })
+
+      setImages(prev => [...prev, ...newImages])
+
+      // แสดงผลการบีบอัด
+      const totalOriginalSize = compressionResults.reduce((sum, result) => sum + result.originalSize, 0)
+      const totalCompressedSize = compressionResults.reduce((sum, result) => sum + result.compressedSize, 0)
+      const totalCompressionRatio = ((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100
+
+      if (totalCompressionRatio > 0) {
+        toast({
+          title: "บีบอัดรูปภาพสำเร็จ",
+          description: `ลดขนาดไฟล์ลง ${totalCompressionRatio.toFixed(1)}% (${ImageCompression.formatFileSize(totalOriginalSize)} → ${ImageCompression.formatFileSize(totalCompressedSize)})`,
+        })
+      }
+    } catch (error) {
+      console.error('Error compressing images:', error)
+      toast({
+        title: "เกิดข้อผิดพลาดในการบีบอัด",
+        description: "ไม่สามารถบีบอัดรูปภาพได้ ใช้ไฟล์ต้นฉบับแทน",
+        variant: "destructive"
+      })
+    } finally {
+      setIsCompressing(false)
+    }
+  }, [images, maxImages, toast, compressionOptions])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -82,21 +145,21 @@ export function ImageUpload({
     setIsDragging(false)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    handleFileSelect(e.dataTransfer.files)
+    await handleFileSelect(e.dataTransfer.files)
   }, [handleFileSelect])
 
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileSelect(e.target.files)
+  const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await handleFileSelect(e.target.files)
     if (e.target) {
       e.target.value = '' // Reset input
     }
   }, [handleFileSelect])
 
-  const handleCameraInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileSelect(e.target.files)
+  const handleCameraInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await handleFileSelect(e.target.files)
     if (e.target) {
       e.target.value = '' // Reset input
     }
@@ -230,6 +293,9 @@ export function ImageUpload({
               <p className="text-sm text-muted-foreground">
                 รองรับ JPG, PNG, GIF, WebP ขนาดไม่เกิน 10MB
               </p>
+              <p className="text-xs text-muted-foreground">
+                รูปภาพจะถูกบีบอัดอัตโนมัติเพื่อประหยัดพื้นที่จัดเก็บ
+              </p>
             </div>
 
             <div className="flex gap-2">
@@ -238,6 +304,7 @@ export function ImageUpload({
                 variant="outline" 
                 onClick={openFileDialog}
                 className="flex items-center gap-2"
+                disabled={isCompressing}
               >
                 <Upload className="w-4 h-4" />
                 เลือกไฟล์
@@ -248,11 +315,19 @@ export function ImageUpload({
                 variant="outline" 
                 onClick={openCamera}
                 className="flex items-center gap-2"
+                disabled={isCompressing}
               >
                 <Camera className="w-4 h-4" />
                 กล้อง
               </Button>
             </div>
+
+            {isCompressing && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                กำลังบีบอัดรูปภาพ...
+              </div>
+            )}
 
             <p className="text-xs text-muted-foreground">
               สามารถอัพโหลดได้สูงสุด {maxImages} รูป
@@ -284,10 +359,36 @@ export function ImageUpload({
       {images.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">รูปภาพที่เลือก ({images.length}/{maxImages})</h4>
+            <div>
+              <h4 className="text-sm font-medium">รูปภาพที่เลือก ({images.length}/{maxImages})</h4>
+              {images.length > 0 && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {(() => {
+                    const totalOriginalSize = images.reduce((sum, img) => 
+                      sum + (img.compressionInfo?.originalSize || img.file.size), 0)
+                    const totalCompressedSize = images.reduce((sum, img) => 
+                      sum + img.file.size, 0)
+                    const totalCompressionRatio = ((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100
+                    
+                    return (
+                      <div className="flex items-center gap-2">
+                        <span>ขนาดรวม: {ImageCompression.formatFileSize(totalCompressedSize)}</span>
+                        {totalCompressionRatio > 0 && (
+                          <>
+                            <span>•</span>
+                            <span className="text-green-600">
+                              ประหยัด {totalCompressionRatio.toFixed(1)}%
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+            </div>
             <Button 
               type="button" 
-              variant="outline" 
               size="sm"
               onClick={uploadImages}
               disabled={!equipmentId || images.some(img => img.isUploading)}
@@ -364,9 +465,33 @@ export function ImageUpload({
                     <p className="text-xs text-muted-foreground truncate">
                       {image.file.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {(image.file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                    <div className="text-xs text-muted-foreground">
+                      {image.compressionInfo ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <Zap className="w-3 h-3 text-green-500" />
+                            <span>
+                              {ImageCompression.formatFileSize(image.compressionInfo.compressedSize)}
+                            </span>
+                            {image.compressionInfo.compressionRatio > 0 && (
+                              <Badge variant="secondary" className="text-xs px-1 py-0">
+                                -{image.compressionInfo.compressionRatio.toFixed(0)}%
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground/70">
+                            จาก {ImageCompression.formatFileSize(image.compressionInfo.originalSize)}
+                          </div>
+                          <div className="text-xs text-muted-foreground/70">
+                            {image.compressionInfo.width} × {image.compressionInfo.height}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          {ImageCompression.formatFileSize(image.file.size)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
