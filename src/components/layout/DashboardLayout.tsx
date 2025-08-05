@@ -7,7 +7,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="min-h-screen w-full bg-background sm:flex">
       <AppSidebar />
       <div className="flex-1 flex flex-col">
         <AppNavbar />
