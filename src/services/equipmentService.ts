@@ -8,6 +8,7 @@ export interface EquipmentWithDetails extends Equipment {
   department_code?: string
   category_name?: string
   assigned_user_name?: string
+  current_employee_name?: string
   status_text?: string
 }
 

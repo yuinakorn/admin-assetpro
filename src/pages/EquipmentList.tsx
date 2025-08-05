@@ -30,6 +30,7 @@ interface Equipment {
   department_name?: string
   status: string
   current_user_name?: string
+  current_employee_name?: string
   serial_number?: string
 }
 
@@ -54,6 +55,7 @@ export default function EquipmentList() {
     try {
       setLoading(true)
       const data = await EquipmentService.getEquipment()
+      console.log('Loaded equipment data:', data) // Debug log
       setEquipment(data)
     } catch (error) {
       console.error('Error loading equipment:', error)
@@ -305,8 +307,8 @@ export default function EquipmentList() {
               <div className="mt-1">{getStatusBadge(item.status)}</div>
             </div>
             <div>
-              <span className="text-muted-foreground">ผู้ใช้งาน:</span>
-              <p className="font-medium">{item.current_user_name || '-'}</p>
+              <span className="text-muted-foreground">ชื่อเจ้าของเครื่อง:</span>
+              <p className="font-medium">{item.current_employee_name || '-'}</p>
             </div>
           </div>
         </div>
@@ -486,7 +488,7 @@ export default function EquipmentList() {
                           onClick={() => handleSort('current_user_name')}
                           className="h-auto p-0 font-semibold hover:bg-transparent"
                         >
-                          ผู้ใช้งาน
+                          เจ้าของเครื่อง
                           {getSortIcon('current_user_name')}
                         </Button>
                       </TableHead>
@@ -501,7 +503,7 @@ export default function EquipmentList() {
                         <TableCell>{item.category_name || '-'}</TableCell>
                         <TableCell>{item.department_name || '-'}</TableCell>
                         <TableCell>{getStatusBadge(item.status)}</TableCell>
-                        <TableCell>{item.current_user_name || '-'}</TableCell>
+                        <TableCell>{item.current_employee_name || '-'}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Button
