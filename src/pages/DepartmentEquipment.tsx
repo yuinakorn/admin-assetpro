@@ -70,6 +70,13 @@ export default function DepartmentEquipment() {
     }
   }, [departmentId])
 
+  // Apply filters when search term, status filter, or category filter changes
+  useEffect(() => {
+    if (allEquipment.length > 0) {
+      applyFilters()
+    }
+  }, [searchTerm, statusFilter, categoryFilter, allEquipment])
+
   const loadDepartmentData = async () => {
     if (!departmentId) return
 
@@ -126,22 +133,16 @@ export default function DepartmentEquipment() {
     setEquipment(filteredEquipment)
   }
 
-  // Search equipment
-  const handleSearch = async (query: string) => {
-    setSearchTerm(query)
-    applyFilters()
-  }
+
 
   // Filter by status
   const handleStatusFilter = (status: string) => {
     setStatusFilter(status)
-    applyFilters()
   }
 
   // Filter by category
   const handleCategoryFilter = (categoryId: string) => {
     setCategoryFilter(categoryId)
-    applyFilters()
   }
 
   // Clear filters
@@ -149,7 +150,6 @@ export default function DepartmentEquipment() {
     setSearchTerm("")
     setStatusFilter("")
     setCategoryFilter("all")
-    setEquipment(allEquipment)
   }
 
   // Delete equipment
@@ -402,7 +402,7 @@ export default function DepartmentEquipment() {
                     placeholder="ค้นหาครุภัณฑ์, รหัส, ยี่ห้อ, รุ่น, เลขประจำเครื่อง..." 
                     className="pl-10"
                     value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                   {searchLoading && (
                     <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 animate-spin" />
