@@ -23,6 +23,7 @@ export default function EquipmentEdit() {
   
   const [formData, setFormData] = useState({
     name: "",
+    equipment_code: "",
     category_id: "",
     brand: "",
     model: "",
@@ -72,6 +73,7 @@ export default function EquipmentEdit() {
 
           setFormData({
             name: equipmentData.name || "",
+            equipment_code: equipmentData.equipment_code || "",
             category_id: equipmentData.category_id || "",
             brand: equipmentData.brand || "",
             model: equipmentData.model || "",
@@ -227,7 +229,7 @@ export default function EquipmentEdit() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">แก้ไขข้อมูลครุภัณฑ์</h1>
-            <p className="text-muted-foreground">แก้ไขข้อมูลครุภัณฑ์ในระบบ</p>
+            <p className="text-muted-foreground">รหัส: {formData.equipment_code || "-"} | {formData.name || "-"}</p>
           </div>
         </div>
 
