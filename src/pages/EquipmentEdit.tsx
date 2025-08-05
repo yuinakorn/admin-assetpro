@@ -305,9 +305,9 @@ export default function EquipmentEdit() {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="current_user_id">ผู้ใช้งาน</Label>
+                      <Label htmlFor="current_user_id">ผู้รับผิดชอบ</Label>
                       <Select value={formData.current_user_id} onValueChange={(value) => setFormData({ ...formData, current_user_id: value })}>
-                        <SelectTrigger><SelectValue placeholder="เลือกผู้ใช้งาน" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="เลือกผู้รับผิดชอบ" /></SelectTrigger>
                         <SelectContent>
                           {users.map((user) => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}
                         </SelectContent>

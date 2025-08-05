@@ -76,7 +76,9 @@ export const EquipmentService = {
         cpu (cpu_name),
         harddisk (hdd_type),
         os (os_name),
-        office (office_name)
+        office (office_name),
+        departments!equipment_department_id_fkey (name, code),
+        users!equipment_current_user_id_fkey (first_name, last_name, role)
       `)
       .eq('id', id)
       .single()
@@ -85,7 +87,20 @@ export const EquipmentService = {
         console.error('Error fetching equipment by ID:', error)
         throw error
     }
-    return data as unknown as Equipment | null
+
+    if (data) {
+      // Transform the data to include department and user information
+      const transformedData = {
+        ...data,
+        department_name: data.departments?.name,
+        department_code: data.departments?.code,
+        current_user_name: data.users ? `${data.users.first_name ?? ''} ${data.users.last_name ?? ''}`.trim() : undefined,
+        current_user_role: data.users?.role
+      }
+      return transformedData as unknown as Equipment | null
+    }
+
+    return null
   },
 
   async createEquipment(equipment: EquipmentInsert): Promise<Equipment> {
