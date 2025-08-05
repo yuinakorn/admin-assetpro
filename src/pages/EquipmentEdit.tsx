@@ -5,11 +5,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ImageUpload } from "@/components/ui/image-upload"
+import { ArrowLeft, Save, Loader2, Image as ImageIcon, Trash2, Star, Plus, X } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
 import { EquipmentCategoryService } from "@/services/equipmentCategoryService"
+import { ImageService } from "@/services/imageService"
 import { useToast } from "@/hooks/use-toast"
 import { Department, User } from "@/types/database" // Assuming these types exist
 
@@ -41,6 +44,13 @@ export default function EquipmentEdit() {
   const [departments, setDepartments] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [users, setUsers] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([])
+  
+  // Image management states
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [images, setImages] = useState<any[]>([])
+  const [imagesLoading, setImagesLoading] = useState(true)
+  const [showImageUpload, setShowImageUpload] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -90,8 +100,71 @@ export default function EquipmentEdit() {
         }
       }
       loadAllData()
+      loadEquipmentImages()
     }
   }, [id, navigate, toast])
+
+  const loadEquipmentImages = async () => {
+    if (!id) return
+    
+    try {
+      setImagesLoading(true)
+      const imageData = await ImageService.getEquipmentImages(id)
+      setImages(imageData)
+    } catch (error) {
+      console.error('Error loading equipment images:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดรูปภาพได้",
+        variant: "destructive"
+      })
+    } finally {
+      setImagesLoading(false)
+    }
+  }
+
+  const handleDeleteImage = async (imageId: string) => {
+    try {
+      await ImageService.deleteImage(imageId)
+      toast({
+        title: "สำเร็จ",
+        description: "ลบรูปภาพเรียบร้อยแล้ว"
+      })
+      loadEquipmentImages() // Reload images
+    } catch (error) {
+      console.error('Error deleting image:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถลบรูปภาพได้",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleSetPrimaryImage = async (imageId: string) => {
+    if (!id) return
+    
+    try {
+      await ImageService.setPrimaryImage(imageId, id)
+      toast({
+        title: "สำเร็จ",
+        description: "ตั้งค่ารูปภาพหลักเรียบร้อยแล้ว"
+      })
+      loadEquipmentImages() // Reload images
+    } catch (error) {
+      console.error('Error setting primary image:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถตั้งค่ารูปภาพหลักได้",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleImagesUploaded = () => {
+    setShowImageUpload(false)
+    loadEquipmentImages() // Reload images
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -251,6 +324,118 @@ export default function EquipmentEdit() {
               {/* ... other cards ... */}
             </div>
             <div className="space-y-6">
+              {/* Equipment Images */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5" />
+                    รูปภาพครุภัณฑ์
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {imagesLoading ? (
+                    <div className="text-center py-4 text-muted-foreground">กำลังโหลดรูปภาพ...</div>
+                  ) : images.length > 0 ? (
+                    <div className="space-y-4">
+                      {/* Primary Image */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {images.find((img: any) => img.is_primary) && (
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground mb-2 block">รูปหลัก</Label>
+                          <div className="relative group">
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            <img
+                              src={images.find((img: any) => img.is_primary)?.image_url}
+                              alt="Primary equipment"
+                              className="w-full aspect-video object-cover rounded-lg"
+                            />
+                            <div className="absolute top-2 left-2">
+                              <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
+                                <Star className="w-3 h-3 inline mr-1" />
+                                หลัก
+                              </div>
+                            </div>
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                  const primaryImage = images.find((img: any) => img.is_primary)
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                  if (primaryImage) {
+                                    handleDeleteImage(primaryImage.id)
+                                  }
+                                }}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Other Images */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {images.filter((img: any) => !img.is_primary).length > 0 && (
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground mb-2 block">รูปอื่นๆ</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            {images.filter((img: any) => !img.is_primary).map((image: any) => (
+                              <div key={image.id} className="relative group">
+                                <img
+                                  src={image.image_url}
+                                  alt={image.image_name || "Equipment"}
+                                  className="w-full aspect-square object-cover rounded-lg"
+                                />
+                                <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleSetPrimaryImage(image.id)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Star className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteImage(image.id)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">ไม่มีรูปภาพ</div>
+                  )}
+
+                  {/* Upload Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowImageUpload(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    เพิ่มรูปภาพ
+                  </Button>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader><CardTitle>สถานะ</CardTitle></CardHeader>
                 <CardContent>
@@ -278,6 +463,25 @@ export default function EquipmentEdit() {
           </div>
         </form>
       </div>
+
+      {/* Image Upload Dialog */}
+      <Dialog open={showImageUpload} onOpenChange={setShowImageUpload}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5" />
+              เพิ่มรูปภาพครุภัณฑ์
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <ImageUpload
+              equipmentId={id}
+              onImagesUploaded={handleImagesUploaded}
+              maxImages={10}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   )
 }
