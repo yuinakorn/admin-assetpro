@@ -164,7 +164,7 @@ export function BrandChart({ equipment }: DepartmentEquipmentChartsProps) {
 // CPU Chart
 export function CPUChart({ equipment }: DepartmentEquipmentChartsProps) {
   const cpuData = equipment.reduce((acc, item) => {
-    const cpu = (item as EquipmentWithDetails & { cpu?: { cpu_name: string } }).cpu?.cpu_name || item.cpu_series || 'ไม่ระบุ'
+    const cpu = item.cpu_name || item.cpu_series || 'ไม่ระบุ'
     acc[cpu] = (acc[cpu] || 0) + 1
     return acc
   }, {} as Record<string, number>)
@@ -309,7 +309,7 @@ export function RAMChart({ equipment }: DepartmentEquipmentChartsProps) {
 // OS Chart
 export function OSChart({ equipment }: DepartmentEquipmentChartsProps) {
   const osData = equipment.reduce((acc, item) => {
-    const os = (item as EquipmentWithDetails & { os?: { os_name: string } }).os?.os_name || item.operating_system || 'ไม่ระบุ'
+    const os = item.os_name || item.operating_system || 'ไม่ระบุ'
     acc[os] = (acc[os] || 0) + 1
     return acc
   }, {} as Record<string, number>)
@@ -388,7 +388,7 @@ export function OSChart({ equipment }: DepartmentEquipmentChartsProps) {
 // Office Chart
 export function OfficeChart({ equipment }: DepartmentEquipmentChartsProps) {
   const officeData = equipment.reduce((acc, item) => {
-    const office = (item as EquipmentWithDetails & { office?: { office_name: string } }).office?.office_name || 'ไม่ระบุ'
+    const office = item.office_name || 'ไม่ระบุ'
     acc[office] = (acc[office] || 0) + 1
     return acc
   }, {} as Record<string, number>)

@@ -10,6 +10,9 @@ export interface EquipmentWithDetails extends Equipment {
   assigned_user_name?: string
   current_employee_name?: string
   status_text?: string
+  os_name?: string
+  office_name?: string
+  cpu_name?: string
 }
 
 
@@ -49,7 +52,10 @@ const mapEquipmentToDetails = async (equipment: Equipment[]): Promise<EquipmentW
       department_code: department?.code,
       assigned_user_name: user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : undefined,
       status_text: getStatusText(item.status),
-      category_name: (item as any).equipment_categories?.name || 'N/A'
+      category_name: (item as any).equipment_categories?.name || 'N/A',
+      os_name: (item as any).os?.os_name || item.operating_system || 'ไม่ระบุ',
+      office_name: (item as any).office?.office_name || 'ไม่ระบุ',
+      cpu_name: (item as any).cpu?.cpu_name || item.cpu_series || 'ไม่ระบุ'
     }
   })
 }
@@ -71,7 +77,14 @@ export const EquipmentService = {
   async getEquipmentByDepartment(departmentId: string): Promise<EquipmentWithDetails[]> {
     const { data, error } = await supabase
       .from('equipment')
-      .select(`*, equipment_categories (name)`)
+      .select(`
+        *,
+        equipment_categories (name),
+        cpu (cpu_name),
+        harddisk (hdd_type),
+        os (os_name),
+        office (office_name)
+      `)
       .eq('department_id', departmentId)
       .order('created_at', { ascending: false })
 
