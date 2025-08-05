@@ -15,6 +15,7 @@ import EquipmentList from "./pages/EquipmentList";
 import DepartmentList from "./pages/DepartmentList";
 import DepartmentAdd from "./pages/DepartmentAdd";
 import DepartmentEdit from "./pages/DepartmentEdit";
+import DepartmentEquipment from "./pages/DepartmentEquipment";
 import UserList from "./pages/UserList";
 import UserAdd from "./pages/UserAdd";
 import UserDetail from "./pages/UserDetail";
@@ -107,6 +108,12 @@ const App = () => (
               <Route path="/departments/edit/:id" element={
                 <ProtectedRoute requiredRole="admin">
                   <DepartmentEdit />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/departments/:departmentId/equipment" element={
+                <ProtectedRoute>
+                  <DepartmentEquipment />
                 </ProtectedRoute>
               } />
               

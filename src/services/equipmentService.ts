@@ -68,6 +68,20 @@ export const EquipmentService = {
     return mapEquipmentToDetails(data as unknown as Equipment[] || [])
   },
 
+  async getEquipmentByDepartment(departmentId: string): Promise<EquipmentWithDetails[]> {
+    const { data, error } = await supabase
+      .from('equipment')
+      .select(`*, equipment_categories (name)`)
+      .eq('department_id', departmentId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching equipment by department:', error)
+        throw error
+    }
+    return mapEquipmentToDetails(data as unknown as Equipment[] || [])
+  },
+
   async getEquipmentById(id: string): Promise<Equipment | null> {
     const { data, error } = await supabase
       .from('equipment')

@@ -237,7 +237,12 @@ export default function DepartmentList() {
                           <TableCell className="font-medium">{department.code}</TableCell>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{department.name}</p>
+                              <p 
+                                className="font-medium cursor-pointer hover:text-primary transition-colors"
+                                onClick={() => navigate(`/departments/${department.id}/equipment`)}
+                              >
+                                {department.name}
+                              </p>
                               <p className="text-xs text-muted-foreground">{department.description}</p>
                             </div>
                           </TableCell>
@@ -268,9 +273,12 @@ export default function DepartmentList() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem className="cursor-pointer">
+                                <DropdownMenuItem 
+                                  className="cursor-pointer"
+                                  onClick={() => navigate(`/departments/${department.id}/equipment`)}
+                                >
                                   <Eye className="mr-2 h-4 w-4" />
-                                  ดูรายละเอียด
+                                  ดูครุภัณฑ์
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   className="cursor-pointer"
