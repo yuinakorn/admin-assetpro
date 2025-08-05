@@ -146,8 +146,9 @@ export function BrandChart({ equipment }: DepartmentEquipmentChartsProps) {
               angle={-45}
               textAnchor="end"
               height={80}
+              type="category"
             />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} type="number" />
             <Tooltip formatter={(value) => [value, 'จำนวน']} />
             <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="#3B82F6">
               {chartData.map((entry, index) => (
@@ -208,8 +209,9 @@ export function CPUChart({ equipment }: DepartmentEquipmentChartsProps) {
               angle={-45}
               textAnchor="end"
               height={80}
+              type="category"
             />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} type="number" />
             <Tooltip formatter={(value) => [value, 'จำนวน']} />
             <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="#10B981">
               {chartData.map((entry, index) => (
@@ -431,8 +433,9 @@ export function OfficeChart({ equipment }: DepartmentEquipmentChartsProps) {
               angle={-45}
               textAnchor="end"
               height={80}
+              type="category"
             />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} type="number" />
             <Tooltip formatter={(value) => [value, 'จำนวน']} />
             <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="#8B5CF6">
               {chartData.map((entry, index) => (

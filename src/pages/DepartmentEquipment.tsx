@@ -39,6 +39,7 @@ import { EquipmentService, EquipmentWithDetails } from "@/services/equipmentServ
 import { DepartmentService } from "@/services/departmentService"
 import { Department } from "@/types/database"
 import { useToast } from "@/hooks/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   CategoryChart, 
   BrandChart, 
@@ -53,9 +54,12 @@ export default function DepartmentEquipment() {
   const { departmentId } = useParams<{ departmentId: string }>()
   const { toast } = useToast()
   const [equipment, setEquipment] = useState<EquipmentWithDetails[]>([])
+  const [allEquipment, setAllEquipment] = useState<EquipmentWithDetails[]>([])
   const [department, setDepartment] = useState<Department | null>(null)
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("")
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const [searchLoading, setSearchLoading] = useState(false)
 
@@ -71,13 +75,16 @@ export default function DepartmentEquipment() {
 
     try {
       setLoading(true)
-      const [deptData, equipData] = await Promise.all([
+      const [deptData, equipData, categoriesData] = await Promise.all([
         DepartmentService.getDepartment(departmentId),
-        EquipmentService.getEquipmentByDepartment(departmentId)
+        EquipmentService.getEquipmentByDepartment(departmentId),
+        EquipmentService.getCategoriesForEquipment()
       ])
       
       setDepartment(deptData)
+      setAllEquipment(equipData)
       setEquipment(equipData)
+      setCategories(categoriesData)
     } catch (error) {
       console.error('Error loading department data:', error)
       toast({
@@ -90,61 +97,59 @@ export default function DepartmentEquipment() {
     }
   }
 
+  // Apply filters
+  const applyFilters = () => {
+    let filteredEquipment = allEquipment
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filteredEquipment = filteredEquipment.filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.equipment_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.assigned_user_name && item.assigned_user_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    }
+
+    // Apply status filter
+    if (statusFilter) {
+      filteredEquipment = filteredEquipment.filter(item => item.status === statusFilter)
+    }
+
+    // Apply category filter
+    if (categoryFilter && categoryFilter !== "all") {
+      filteredEquipment = filteredEquipment.filter(item => item.category_id === categoryFilter)
+    }
+
+    setEquipment(filteredEquipment)
+  }
+
   // Search equipment
   const handleSearch = async (query: string) => {
     setSearchTerm(query)
-    
-    if (!query.trim() && !statusFilter) {
-      loadDepartmentData()
-      return
-    }
-
-    try {
-      setSearchLoading(true)
-      const allEquipment = await EquipmentService.getEquipmentByDepartment(departmentId!)
-      let filteredEquipment = allEquipment
-
-      // Apply search filter
-      if (query.trim()) {
-        filteredEquipment = filteredEquipment.filter(item =>
-          item.name.toLowerCase().includes(query.toLowerCase()) ||
-          item.equipment_code.toLowerCase().includes(query.toLowerCase()) ||
-          item.brand.toLowerCase().includes(query.toLowerCase()) ||
-          item.model.toLowerCase().includes(query.toLowerCase()) ||
-          item.serial_number.toLowerCase().includes(query.toLowerCase()) ||
-          (item.assigned_user_name && item.assigned_user_name.toLowerCase().includes(query.toLowerCase()))
-        )
-      }
-
-      // Apply status filter
-      if (statusFilter) {
-        filteredEquipment = filteredEquipment.filter(item => item.status === statusFilter)
-      }
-
-      setEquipment(filteredEquipment)
-    } catch (error) {
-      console.error('Error searching equipment:', error)
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถค้นหาครุภัณฑ์ได้",
-        variant: "destructive"
-      })
-    } finally {
-      setSearchLoading(false)
-    }
+    applyFilters()
   }
 
   // Filter by status
   const handleStatusFilter = (status: string) => {
     setStatusFilter(status)
-    handleSearch(searchTerm)
+    applyFilters()
+  }
+
+  // Filter by category
+  const handleCategoryFilter = (categoryId: string) => {
+    setCategoryFilter(categoryId)
+    applyFilters()
   }
 
   // Clear filters
   const clearFilters = () => {
     setSearchTerm("")
     setStatusFilter("")
-    loadDepartmentData()
+    setCategoryFilter("all")
+    setEquipment(allEquipment)
   }
 
   // Delete equipment
@@ -327,22 +332,46 @@ export default function DepartmentEquipment() {
         </div>
 
         {/* Charts Section */}
-        {equipment.length > 0 ? (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">สถิติครุภัณฑ์ในแผนก</h2>
+        {allEquipment.length > 0 ? (
+          equipment.length > 0 ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-foreground">
+                  สถิติครุภัณฑ์ในแผนก
+                  {(categoryFilter !== "all" || statusFilter || searchTerm) && (
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
+                      (แสดงผลตามตัวกรองที่เลือก)
+                    </span>
+                  )}
+                </h2>
+              </div>
+              
+              {/* Charts Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <CategoryChart equipment={equipment} />
+                <BrandChart equipment={equipment} />
+                <CPUChart equipment={equipment} />
+                <RAMChart equipment={equipment} />
+                <OSChart equipment={equipment} />
+                <OfficeChart equipment={equipment} />
+              </div>
             </div>
-            
-            {/* Charts Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <CategoryChart equipment={equipment} />
-              <BrandChart equipment={equipment} />
-              <CPUChart equipment={equipment} />
-              <RAMChart equipment={equipment} />
-              <OSChart equipment={equipment} />
-              <OfficeChart equipment={equipment} />
-            </div>
-          </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไข</h3>
+                  <p className="text-muted-foreground mb-4">
+                    ไม่มีครุภัณฑ์ที่ตรงกับเงื่อนไขการกรองที่เลือก
+                  </p>
+                  <Button onClick={clearFilters}>
+                    ล้างตัวกรอง
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )
         ) : (
           <Card>
             <CardContent className="pt-6">
@@ -365,7 +394,8 @@ export default function DepartmentEquipment() {
         {equipment.length > 0 && (
           <Card>
             <CardContent className="pt-6">
-              <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex flex-col gap-4">
+                {/* Search Bar */}
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input 
@@ -378,42 +408,64 @@ export default function DepartmentEquipment() {
                     <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 animate-spin" />
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant={statusFilter === "" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleStatusFilter("")}
-                  >
-                    ทั้งหมด
-                  </Button>
-                  <Button 
-                    variant={statusFilter === "normal" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleStatusFilter("normal")}
-                  >
-                    ใช้งานปกติ
-                  </Button>
-                  <Button 
-                    variant={statusFilter === "maintenance" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleStatusFilter("maintenance")}
-                  >
-                    บำรุงรักษา
-                  </Button>
-                  <Button 
-                    variant={statusFilter === "damaged" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleStatusFilter("damaged")}
-                  >
-                    ชำรุด
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={clearFilters}
-                  >
-                    ล้างตัวกรอง
-                  </Button>
+                
+                {/* Filters Row */}
+                <div className="flex flex-col lg:flex-row gap-4">
+                  {/* Category Filter */}
+                  <div className="flex-1">
+                    <Select value={categoryFilter} onValueChange={handleCategoryFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกประเภทครุภัณฑ์" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ทุกประเภท</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Status Filters */}
+                  <div className="flex gap-2">
+                    <Button 
+                      variant={statusFilter === "" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleStatusFilter("")}
+                    >
+                      ทุกสถานะ
+                    </Button>
+                    <Button 
+                      variant={statusFilter === "normal" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleStatusFilter("normal")}
+                    >
+                      ใช้งานปกติ
+                    </Button>
+                    <Button 
+                      variant={statusFilter === "maintenance" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleStatusFilter("maintenance")}
+                    >
+                      บำรุงรักษา
+                    </Button>
+                    <Button 
+                      variant={statusFilter === "damaged" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleStatusFilter("damaged")}
+                    >
+                      ชำรุด
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={clearFilters}
+                    >
+                      ล้างตัวกรอง
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -424,7 +476,14 @@ export default function DepartmentEquipment() {
         {equipment.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>ครุภัณฑ์ทั้งหมด ({equipment.length} ชิ้น)</CardTitle>
+              <CardTitle>
+                ครุภัณฑ์ทั้งหมด ({equipment.length} ชิ้น)
+                {equipment.length !== allEquipment.length && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    จากทั้งหมด {allEquipment.length} ชิ้น
+                  </span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
             {loading ? (
@@ -450,7 +509,7 @@ export default function DepartmentEquipment() {
                     {equipment.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          {searchTerm || statusFilter ? "ไม่พบครุภัณฑ์ที่ค้นหา" : "ไม่มีครุภัณฑ์ในแผนกนี้"}
+                          {searchTerm || statusFilter || categoryFilter !== "all" ? "ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไขการกรอง" : "ไม่มีครุภัณฑ์ในแผนกนี้"}
                         </TableCell>
                       </TableRow>
                     ) : (

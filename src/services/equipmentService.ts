@@ -211,6 +211,15 @@ export const EquipmentService = {
     return data || []
   },
 
+  async getCategoriesForEquipment(): Promise<Array<{ id: string; name: string; code: string }>> {
+    const { data, error } = await supabase.from('equipment_categories').select('id, name, code').eq('is_active', true).order('name')
+    if (error) {
+        console.error('Error fetching categories:', error)
+        throw error
+    }
+    return data || []
+  },
+
   async getUsersForEquipment(): Promise<Array<{ id: string; name: string; role: string }>> {
     const { data, error } = await supabase.from('users').select('id, first_name, last_name, role').eq('is_active', true).order('first_name')
     if (error) {
