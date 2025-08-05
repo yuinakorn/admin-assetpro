@@ -122,6 +122,18 @@ export const EquipmentService = {
         console.error('Error creating equipment:', error)
         throw error
     }
+
+    // Update the most recent history record with the current user
+    if (currentUser?.id) {
+      await supabase
+        .from('equipment_history')
+        .update({ changed_by: currentUser.id })
+        .eq('equipment_id', data.id)
+        .eq('action_type', 'create')
+        .order('created_at', { ascending: false })
+        .limit(1)
+    }
+
     return data as unknown as Equipment
   },
 
@@ -141,6 +153,17 @@ export const EquipmentService = {
         console.error('Error updating equipment:', error)
         throw error
     }
+
+    // Update the most recent history record with the current user
+    if (currentUser?.id) {
+      await supabase
+        .from('equipment_history')
+        .update({ changed_by: currentUser.id })
+        .eq('equipment_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+    }
+
     return data as unknown as Equipment
   },
 

@@ -2,6 +2,9 @@
 .git
 .gitignore
 
+# SQL
+*.sql
+
 # Dependencies
 node_modules
 

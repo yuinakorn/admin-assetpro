@@ -28,3 +28,7 @@ dist-ssr
 
 .git
 
+# Database backups
+backups/
+backup_*.sql
+

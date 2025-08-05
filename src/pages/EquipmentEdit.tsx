@@ -262,8 +262,8 @@ export default function EquipmentEdit() {
                       <Input id="model" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} required />
                     </div>
                     <div>
-                      <Label htmlFor="serial_number">เลขประจำเครื่อง *</Label>
-                      <Input id="serial_number" value={formData.serial_number} onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })} required />
+                      <Label htmlFor="serial_number">เลขประจำเครื่อง</Label>
+                      <Input id="serial_number" value={formData.serial_number} onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })} />
                     </div>
                     <div>
                       <Label htmlFor="asset_number">เลขครุภัณฑ์</Label>
