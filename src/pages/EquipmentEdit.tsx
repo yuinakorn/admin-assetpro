@@ -13,6 +13,10 @@ import { useNavigate, useParams } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
 import { EquipmentCategoryService } from "@/services/equipmentCategoryService"
 import { ImageService } from "@/services/imageService"
+import { cpuService, CPU } from "@/services/cpuService"
+import { harddiskService, Harddisk } from "@/services/harddiskService"
+import { osService, OS } from "@/services/osService"
+import { officeService, Office } from "@/services/officeService"
 import { useToast } from "@/hooks/use-toast"
 import { Department, User } from "@/types/database" // Assuming these types exist
 
@@ -37,7 +41,14 @@ export default function EquipmentEdit() {
     current_user_id: "",
     current_employee_name: "",
     status: "normal" as "normal" | "maintenance" | "damaged" | "disposed" | "borrowed",
-    location: ""
+    location: "",
+    cpu_id: "",
+    cpu_series: "",
+    ram: "",
+    storage: "",
+    harddisk_id: "",
+    os_id: "",
+    office_id: ""
   })
 
   const [loading, setLoading] = useState(false)
@@ -45,6 +56,10 @@ export default function EquipmentEdit() {
   const [departments, setDepartments] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [users, setUsers] = useState<Array<{ id: string; name: string; role: string }>>([])
   const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([])
+  const [cpus, setCpus] = useState<CPU[]>([])
+  const [harddisks, setHarddisks] = useState<Harddisk[]>([])
+  const [oses, setOses] = useState<OS[]>([])
+  const [offices, setOffices] = useState<Office[]>([])
   
   // Image management states
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -58,11 +73,15 @@ export default function EquipmentEdit() {
       const loadAllData = async () => {
         try {
           setInitialLoading(true)
-          const [equipmentData, departmentsData, usersData, categoriesData] = await Promise.all([
+          const [equipmentData, departmentsData, usersData, categoriesData, cpusData, harddisksData, osesData, officesData] = await Promise.all([
             EquipmentService.getEquipmentById(id),
             EquipmentService.getDepartmentsForEquipment(),
             EquipmentService.getUsersForEquipment(),
             EquipmentCategoryService.getCategoriesForEquipment(),
+            cpuService.getAllCPUs(),
+            harddiskService.getAllHarddisks(),
+            osService.getAllOS(),
+            officeService.getAllOffices(),
           ])
 
           if (!equipmentData) {
@@ -87,12 +106,23 @@ export default function EquipmentEdit() {
             current_user_id: equipmentData.current_user_id || "",
             current_employee_name: equipmentData.current_employee_name || "",
             status: equipmentData.status,
-            location: equipmentData.location || ""
+            location: equipmentData.location || "",
+            cpu_id: equipmentData.cpu_id || "",
+            cpu_series: equipmentData.cpu_series || "",
+            ram: equipmentData.ram?.toString() || "",
+            storage: equipmentData.storage || "",
+            harddisk_id: equipmentData.harddisk_id || "",
+            os_id: equipmentData.os_id || "",
+            office_id: equipmentData.office_id || ""
           })
           
           setDepartments(departmentsData)
           setUsers(usersData)
           setCategories(categoriesData)
+          setCpus(cpusData)
+          setHarddisks(harddisksData)
+          setOses(osesData)
+          setOffices(officesData)
 
         } catch (error) {
           console.error('Error loading data for edit page:', error)
@@ -180,7 +210,11 @@ export default function EquipmentEdit() {
         return
       }
 
-      await EquipmentService.updateEquipment(id, {
+      const selectedCategory = categories.find(c => c.id === formData.category_id)
+      const selectedCategoryCode = selectedCategory?.code || ''
+      const showComputerFields = ['COMPUTER', 'LAPTOP', 'AIO'].includes(selectedCategoryCode)
+
+      const updateData: Record<string, unknown> = {
         name: formData.name,
         category_id: formData.category_id,
         brand: formData.brand,
@@ -196,7 +230,19 @@ export default function EquipmentEdit() {
         current_employee_name: formData.current_employee_name,
         status: formData.status,
         location: formData.location
-      })
+      }
+
+      if (showComputerFields) {
+        updateData.cpu_id = formData.cpu_id || null
+        updateData.cpu_series = formData.cpu_series || null
+        updateData.ram = formData.ram ? parseInt(formData.ram, 10) : null
+        updateData.storage = formData.storage || null
+        updateData.harddisk_id = formData.harddisk_id || null
+        updateData.os_id = formData.os_id || null
+        updateData.office_id = formData.office_id || null
+      }
+
+      await EquipmentService.updateEquipment(id, updateData)
       
       toast({ title: "สำเร็จ", description: "อัปเดตข้อมูลครุภัณฑ์เรียบร้อยแล้ว" })
       navigate("/equipment/list")
@@ -292,6 +338,129 @@ export default function EquipmentEdit() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Specific Properties */}
+              {(() => {
+                const selectedCategory = categories.find(c => c.id === formData.category_id)
+                const selectedCategoryCode = selectedCategory?.code || ''
+                const showComputerFields = ['COMPUTER', 'LAPTOP', 'AIO'].includes(selectedCategoryCode)
+                
+                return showComputerFields && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>คุณสมบัติเฉพาะ</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="cpu">CPU</Label>
+                          <Select
+                            value={formData.cpu_id}
+                            onValueChange={(value) => setFormData({ ...formData, cpu_id: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="เลือก CPU" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cpus.map((cpu) => (
+                                <SelectItem key={cpu.id} value={cpu.id!}>
+                                  {cpu.cpu_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="cpu_series">CPU Series</Label>
+                          <Input
+                            id="cpu_series"
+                            placeholder="เช่น Core i5-8250U"
+                            value={formData.cpu_series}
+                            onChange={(e) => setFormData({ ...formData, cpu_series: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="ram">RAM (GB)</Label>
+                        <Input
+                          id="ram"
+                          type="number"
+                          placeholder="เช่น 8"
+                          value={formData.ram}
+                          onChange={(e) => setFormData({ ...formData, ram: e.target.value })}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="harddisk">Harddisk Type</Label>
+                          <Select
+                            value={formData.harddisk_id}
+                            onValueChange={(value) => setFormData({ ...formData, harddisk_id: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="เลือก Harddisk" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {harddisks.map((harddisk) => (
+                                <SelectItem key={harddisk.id} value={harddisk.id!}>
+                                  {harddisk.hdd_type}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="storage">Storage (GB,TB)</Label>
+                          <Input
+                            id="storage"
+                            type="text"
+                            placeholder="เช่น 256, 512, 1TB"
+                            value={formData.storage}
+                            onChange={(e) => setFormData({ ...formData, storage: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="os">Operating System</Label>
+                        <Select
+                          value={formData.os_id}
+                          onValueChange={(value) => setFormData({ ...formData, os_id: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="เลือก Operating System" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {oses.map((os) => (
+                              <SelectItem key={os.id} value={os.id!}>
+                                {os.os_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="office">Office</Label>
+                        <Select
+                          value={formData.office_id}
+                          onValueChange={(value) => setFormData({ ...formData, office_id: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="เลือก Office" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {offices.map((office) => (
+                              <SelectItem key={office.id} value={office.id!}>
+                                {office.office_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })()}
               
               <Card>
                 <CardHeader><CardTitle>ข้อมูลการมอบหมาย</CardTitle></CardHeader>
@@ -322,6 +491,7 @@ export default function EquipmentEdit() {
                   </div>
                 </CardContent>
               </Card>
+
               
               {/* ... other cards ... */}
             </div>
