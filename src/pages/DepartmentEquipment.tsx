@@ -46,7 +46,8 @@ import {
   CPUChart, 
   RAMChart, 
   OSChart, 
-  OfficeChart 
+  OfficeChart,
+  PurchaseYearChart
 } from "@/components/dashboard/DepartmentEquipmentCharts"
 
 export default function DepartmentEquipment() {
@@ -60,6 +61,7 @@ export default function DepartmentEquipment() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [yearFilter, setYearFilter] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const [searchLoading, setSearchLoading] = useState(false)
 
@@ -70,12 +72,12 @@ export default function DepartmentEquipment() {
     }
   }, [departmentId])
 
-  // Apply filters when search term, status filter, or category filter changes
+  // Apply filters when search term, status filter, category filter, or year filter changes
   useEffect(() => {
     if (allEquipment.length > 0) {
       applyFilters()
     }
-  }, [searchTerm, statusFilter, categoryFilter, allEquipment])
+  }, [searchTerm, statusFilter, categoryFilter, yearFilter, allEquipment])
 
   const loadDepartmentData = async () => {
     if (!departmentId) return
@@ -130,6 +132,15 @@ export default function DepartmentEquipment() {
       filteredEquipment = filteredEquipment.filter(item => item.category_id === categoryFilter)
     }
 
+    // Apply year filter
+    if (yearFilter && yearFilter !== "all") {
+      filteredEquipment = filteredEquipment.filter(item => {
+        if (!item.purchase_date) return false
+        const itemYear = new Date(item.purchase_date).getFullYear().toString()
+        return itemYear === yearFilter
+      })
+    }
+
     setEquipment(filteredEquipment)
   }
 
@@ -145,11 +156,17 @@ export default function DepartmentEquipment() {
     setCategoryFilter(categoryId)
   }
 
+  // Filter by year
+  const handleYearFilter = (year: string) => {
+    setYearFilter(year)
+  }
+
   // Clear filters
   const clearFilters = () => {
     setSearchTerm("")
     setStatusFilter("")
     setCategoryFilter("all")
+    setYearFilter("all")
   }
 
   // Delete equipment
@@ -200,6 +217,18 @@ export default function DepartmentEquipment() {
     if (category.includes('printer') || category.includes('เครื่องพิมพ์')) return Printer
     if (category.includes('network') || category.includes('เครือข่าย')) return Network
     return Monitor
+  }
+
+  // Get available years from equipment data
+  const getAvailableYears = () => {
+    const years = new Set<string>()
+    allEquipment.forEach(item => {
+      if (item.purchase_date) {
+        const year = new Date(item.purchase_date).getFullYear().toString()
+        years.add(year)
+      }
+    })
+    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)) // Sort descending
   }
 
   // Calculate stats
@@ -338,7 +367,7 @@ export default function DepartmentEquipment() {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">
                   สถิติครุภัณฑ์ในแผนก
-                  {(categoryFilter !== "all" || statusFilter || searchTerm) && (
+                  {(categoryFilter !== "all" || statusFilter || yearFilter !== "all" || searchTerm) && (
                     <span className="text-sm font-normal text-muted-foreground ml-2">
                       (แสดงผลตามตัวกรองที่เลือก)
                     </span>
@@ -354,6 +383,7 @@ export default function DepartmentEquipment() {
                 <RAMChart equipment={equipment} />
                 <OSChart equipment={equipment} />
                 <OfficeChart equipment={equipment} />
+                <PurchaseYearChart equipment={equipment} />
               </div>
             </div>
           ) : (
@@ -422,6 +452,23 @@ export default function DepartmentEquipment() {
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Year Filter */}
+                  <div className="flex-1">
+                    <Select value={yearFilter} onValueChange={handleYearFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกปีงบประมาณ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ทุกปี</SelectItem>
+                        {getAvailableYears().map((year) => (
+                          <SelectItem key={year} value={year}>
+                            ปีงบประมาณ {year}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -509,7 +556,7 @@ export default function DepartmentEquipment() {
                     {equipment.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          {searchTerm || statusFilter || categoryFilter !== "all" ? "ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไขการกรอง" : "ไม่มีครุภัณฑ์ในแผนกนี้"}
+                          {searchTerm || statusFilter || categoryFilter !== "all" || yearFilter !== "all" ? "ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไขการกรอง" : "ไม่มีครุภัณฑ์ในแผนกนี้"}
                         </TableCell>
                       </TableRow>
                     ) : (

@@ -491,7 +491,6 @@ export default function EquipmentEdit() {
                   </div>
                 </CardContent>
               </Card>
-
               
               {/* ... other cards ... */}
             </div>

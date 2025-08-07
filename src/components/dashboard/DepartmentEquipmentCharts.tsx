@@ -447,4 +447,74 @@ export function OfficeChart({ equipment }: DepartmentEquipmentChartsProps) {
       </CardContent>
     </Card>
   )
+}
+
+// Purchase Year Chart
+export function PurchaseYearChart({ equipment }: DepartmentEquipmentChartsProps) {
+  const yearData = equipment.reduce((acc, item) => {
+    if (item.purchase_date) {
+      const year = new Date(item.purchase_date).getFullYear().toString()
+      acc[year] = (acc[year] || 0) + 1
+    } else {
+      acc['ไม่ระบุ'] = (acc['ไม่ระบุ'] || 0) + 1
+    }
+    return acc
+  }, {} as Record<string, number>)
+
+  const chartData: ChartData[] = Object.entries(yearData)
+    .sort(([a], [b]) => {
+      if (a === 'ไม่ระบุ') return 1
+      if (b === 'ไม่ระบุ') return -1
+      return parseInt(a) - parseInt(b)
+    })
+    .map(([name, count], index) => ({
+      name,
+      count,
+      color: name === 'ไม่ระบุ' ? '#9CA3AF' : generateColors(Object.keys(yearData).length)[index]
+    }))
+
+  if (chartData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">ครุภัณฑ์ตามปีที่ซื้อ</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[250px] flex items-center justify-center">
+            <div className="text-muted-foreground">ไม่มีข้อมูล</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">ครุภัณฑ์ตามปีที่ซื้อ</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+            <XAxis 
+              dataKey="name" 
+              tick={{ fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              type="category"
+            />
+            <YAxis tick={{ fontSize: 12 }} type="number" />
+            <Tooltip formatter={(value) => [value, 'จำนวน']} />
+            <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="#F59E0B">
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  )
 } 
