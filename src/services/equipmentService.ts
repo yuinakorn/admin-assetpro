@@ -64,7 +64,14 @@ export const EquipmentService = {
   async getEquipment(): Promise<EquipmentWithDetails[]> {
     const { data, error } = await supabase
       .from('equipment')
-      .select(`*, equipment_categories (name)`)
+      .select(`
+        *,
+        equipment_categories (name),
+        cpu (cpu_name),
+        harddisk (hdd_type),
+        os (os_name),
+        office (office_name)
+      `)
       .order('created_at', { ascending: false })
 
     if (error) {

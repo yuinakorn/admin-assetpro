@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts"
 import { useEffect, useState } from "react"
 import { DashboardService, EquipmentStatusData, MonthlyTrendData, EquipmentTypeData, EquipmentDepartmentData } from "@/services/dashboardService"
+import { EquipmentWithDetails } from "@/services/equipmentService"
 
 export function EquipmentStatusChart() {
   const [statusData, setStatusData] = useState<EquipmentStatusData[]>([])
@@ -122,16 +123,49 @@ export function MonthlyTrendChart() {
   )
 }
 
-// New Donut Chart for Equipment Types
-export function EquipmentTypeChart() {
+// Updated Equipment Type Chart that accepts filtered data
+export function EquipmentTypeChart({ equipment }: { equipment?: EquipmentWithDetails[] }) {
   const [typeData, setTypeData] = useState<EquipmentTypeData[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await DashboardService.getEquipmentByType()
-        setTypeData(data)
+        // If equipment data is provided, calculate from it, otherwise fetch from service
+        if (equipment && equipment.length > 0) {
+          // Calculate type data from filtered equipment
+          const categoryCounts: Record<string, { name: string; code: string; count: number }> = {}
+          
+          equipment.forEach((item) => {
+            if (item.category_name) {
+              const categoryKey = item.category_name
+              if (!categoryCounts[categoryKey]) {
+                categoryCounts[categoryKey] = {
+                  name: item.category_name,
+                  code: item.category_code || item.category_name,
+                  count: 0
+                }
+              }
+              categoryCounts[categoryKey].count++
+            }
+          })
+
+          // Generate colors
+          const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#6B7280', '#EC4899', '#14B8A6']
+
+          const calculatedData = Object.values(categoryCounts).map((category, index) => ({
+            type: category.code,
+            type_label: category.name,
+            count: category.count,
+            color: colors[index % colors.length]
+          }))
+
+          setTypeData(calculatedData)
+        } else {
+          // Fallback to service data
+          const data = await DashboardService.getEquipmentByType()
+          setTypeData(data)
+        }
       } catch (error) {
         console.error('Error fetching equipment type data:', error)
       } finally {
@@ -140,7 +174,7 @@ export function EquipmentTypeChart() {
     }
 
     fetchData()
-  }, [])
+  }, [equipment])
 
   if (loading) {
     return (
@@ -151,6 +185,21 @@ export function EquipmentTypeChart() {
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
             <div className="text-muted-foreground">กำลังโหลด...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (typeData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">จำนวนครุภัณฑ์ตามประเภท</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="text-muted-foreground">ไม่มีข้อมูล</div>
           </div>
         </CardContent>
       </Card>
@@ -211,16 +260,49 @@ export function EquipmentTypeChart() {
   )
 }
 
-// New Bar Chart for Equipment by Department
-export function EquipmentDepartmentChart() {
+// Updated Equipment Department Chart that accepts filtered data
+export function EquipmentDepartmentChart({ equipment }: { equipment?: EquipmentWithDetails[] }) {
   const [departmentData, setDepartmentData] = useState<EquipmentDepartmentData[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await DashboardService.getEquipmentByDepartment()
-        setDepartmentData(data)
+        // If equipment data is provided, calculate from it, otherwise fetch from service
+        if (equipment && equipment.length > 0) {
+          // Calculate department data from filtered equipment
+          const deptCounts: Record<string, { name: string; code: string; count: number }> = {}
+          
+          equipment.forEach((item) => {
+            if (item.department_name) {
+              const deptKey = item.department_name
+              if (!deptCounts[deptKey]) {
+                deptCounts[deptKey] = {
+                  name: item.department_name,
+                  code: item.department_code || item.department_name,
+                  count: 0
+                }
+              }
+              deptCounts[deptKey].count++
+            }
+          })
+
+          // Generate colors
+          const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#6B7280', '#EC4899', '#14B8A6']
+
+          const calculatedData = Object.values(deptCounts).map((dept, index) => ({
+            department: dept.name,
+            department_code: dept.code,
+            count: dept.count,
+            color: colors[index % colors.length]
+          }))
+
+          setDepartmentData(calculatedData)
+        } else {
+          // Fallback to service data
+          const data = await DashboardService.getEquipmentByDepartment()
+          setDepartmentData(data)
+        }
       } catch (error) {
         console.error('Error fetching equipment department data:', error)
       } finally {
@@ -229,7 +311,7 @@ export function EquipmentDepartmentChart() {
     }
 
     fetchData()
-  }, [])
+  }, [equipment])
 
   if (loading) {
     return (
@@ -240,6 +322,21 @@ export function EquipmentDepartmentChart() {
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
             <div className="text-muted-foreground">กำลังโหลด...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (departmentData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">จำนวนครุภัณฑ์ตามแผนก</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="text-muted-foreground">ไม่มีข้อมูล</div>
           </div>
         </CardContent>
       </Card>

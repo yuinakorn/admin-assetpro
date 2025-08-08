@@ -165,7 +165,8 @@ export function BrandChart({ equipment }: DepartmentEquipmentChartsProps) {
 // CPU Chart
 export function CPUChart({ equipment }: DepartmentEquipmentChartsProps) {
   const cpuData = equipment.reduce((acc, item) => {
-    const cpu = item.cpu_name || item.cpu_series || 'ไม่ระบุ'
+    // ใช้ cpu_name จากตาราง cpu ที่ join มา
+    const cpu = item.cpu_name || 'ไม่ระบุ'
     acc[cpu] = (acc[cpu] || 0) + 1
     return acc
   }, {} as Record<string, number>)

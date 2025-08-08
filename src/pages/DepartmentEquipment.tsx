@@ -570,7 +570,7 @@ export default function DepartmentEquipment() {
                                 <EquipmentIcon className="w-4 h-4 text-muted-foreground" />
                                 <div>
                                   <p className="font-medium">{item.name}</p>
-                                  <p className="text-xs text-muted-foreground">{item.serial_number}</p>
+                                  <p className="text-xs text-muted-foreground">{item.asset_number}</p>
                                 </div>
                               </div>
                             </TableCell>

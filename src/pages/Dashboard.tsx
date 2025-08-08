@@ -1,6 +1,9 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   Monitor, 
   Users, 
@@ -8,13 +11,29 @@ import {
   Package, 
   AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  Search,
+  Filter,
+  Loader2,
+  BarChart3,
+  PieChart,
+  TrendingUp
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useEffect, useState } from "react"
 import { DashboardService, DashboardStats } from "@/services/dashboardService"
+import { EquipmentService, EquipmentWithDetails } from "@/services/equipmentService"
 import { EquipmentTypeChart, EquipmentDepartmentChart } from "@/components/dashboard/EquipmentChart"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
+import { 
+  CategoryChart, 
+  BrandChart, 
+  CPUChart, 
+  RAMChart, 
+  OSChart, 
+  OfficeChart,
+  PurchaseYearChart
+} from "@/components/dashboard/DepartmentEquipmentCharts"
 
 export default function Dashboard() {
   const { user, userProfile } = useAuth()
@@ -31,22 +50,101 @@ export default function Dashboard() {
     expiring_warranty: 0,
     expired_warranty: 0
   })
+  const [allEquipment, setAllEquipment] = useState<EquipmentWithDetails[]>([])
+  const [filteredEquipment, setFilteredEquipment] = useState<EquipmentWithDetails[]>([])
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [loading, setLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [yearFilter, setYearFilter] = useState<string>("all")
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all")
+  const [showAdvancedCharts, setShowAdvancedCharts] = useState(false)
 
   useEffect(() => {
-    loadDashboardStats()
+    loadDashboardData()
   }, [])
 
-  const loadDashboardStats = async () => {
+  // Apply filters when any filter changes
+  useEffect(() => {
+    if (allEquipment.length > 0) {
+      applyFilters()
+    }
+  }, [searchTerm, statusFilter, categoryFilter, yearFilter, departmentFilter, allEquipment])
+
+  const loadDashboardData = async () => {
     try {
       setLoading(true)
-      const data = await DashboardService.getDashboardStats()
-      setStats(data)
+             const [statsData, equipmentData, categoriesData] = await Promise.all([
+         DashboardService.getDashboardStats(),
+         EquipmentService.getEquipment(),
+         EquipmentService.getCategoriesForEquipment()
+       ])
+      
+      setStats(statsData)
+      setAllEquipment(equipmentData)
+      setFilteredEquipment(equipmentData)
+      setCategories(categoriesData)
     } catch (error) {
-      console.error('Error loading dashboard stats:', error)
+      console.error('Error loading dashboard data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Apply filters
+  const applyFilters = () => {
+    let filtered = allEquipment
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.equipment_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.current_employee_name && item.current_employee_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    }
+
+    // Apply status filter
+    if (statusFilter && statusFilter !== "all") {
+      filtered = filtered.filter(item => item.status === statusFilter)
+    }
+
+    // Apply category filter
+    if (categoryFilter && categoryFilter !== "all") {
+      filtered = filtered.filter(item => item.category_id === categoryFilter)
+    }
+
+    // Apply year filter
+    if (yearFilter && yearFilter !== "all") {
+      filtered = filtered.filter(item => {
+        if (!item.purchase_date) return false
+        const itemYear = new Date(item.purchase_date).getFullYear().toString()
+        return itemYear === yearFilter
+      })
+    }
+
+    // Apply department filter
+    if (departmentFilter && departmentFilter !== "all") {
+      filtered = filtered.filter(item => item.department_id === departmentFilter)
+    }
+
+    setFilteredEquipment(filtered)
+  }
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm("")
+    setStatusFilter("all")
+    setCategoryFilter("all")
+    setYearFilter("all")
+    setDepartmentFilter("all")
   }
 
   const calculatePercentage = (value: number, total: number) => {
@@ -74,11 +172,45 @@ export default function Dashboard() {
     return roleLabels[role as keyof typeof roleLabels] || 'ผู้ใช้งาน'
   }
 
+  // Get available years from equipment data
+  const getAvailableYears = () => {
+    const years = new Set<string>()
+    allEquipment.forEach(item => {
+      if (item.purchase_date) {
+        const year = new Date(item.purchase_date).getFullYear().toString()
+        years.add(year)
+      }
+    })
+    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a))
+  }
+
+  // Get available departments from equipment data
+  const getAvailableDepartments = () => {
+    const departments = new Map<string, string>()
+    allEquipment.forEach(item => {
+      if (item.department_id && item.department_name) {
+        departments.set(item.department_id, item.department_name)
+      }
+    })
+    return Array.from(departments.entries()).map(([id, name]) => ({ id, name }))
+  }
+
+  // Calculate filtered stats
+  const filteredStats = {
+    total: filteredEquipment.length,
+    normal: filteredEquipment.filter(e => e.status === 'normal').length,
+    maintenance: filteredEquipment.filter(e => e.status === 'maintenance').length,
+    damaged: filteredEquipment.filter(e => e.status === 'damaged').length,
+    disposed: filteredEquipment.filter(e => e.status === 'disposed').length,
+    borrowed: filteredEquipment.filter(e => e.status === 'borrowed').length
+  }
+
   if (loading) {
     return (
       <DashboardLayout>
         <div className="space-y-6">
           <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" />
             <div className="text-muted-foreground">กำลังโหลดข้อมูล...</div>
           </div>
         </div>
@@ -209,11 +341,245 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Charts Section */}
+        {/* Filters Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              ตัวกรองข้อมูลครุภัณฑ์
+                             {(categoryFilter !== "all" || statusFilter !== "all" || yearFilter !== "all" || departmentFilter !== "all" || searchTerm) && (
+                 <Badge variant="secondary" className="ml-2">
+                   ใช้งานอยู่
+                 </Badge>
+               )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input 
+                  placeholder="ค้นหาครุภัณฑ์, รหัส, ยี่ห้อ, รุ่น, เลขประจำเครื่อง, ชื่อพนักงาน..." 
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchLoading && (
+                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 animate-spin" />
+                )}
+              </div>
+              
+              {/* Filters Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Category Filter */}
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกประเภทครุภัณฑ์" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทุกประเภท</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Department Filter */}
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกแผนก" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทุกแผนก</SelectItem>
+                    {getAvailableDepartments().map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Year Filter */}
+                <Select value={yearFilter} onValueChange={setYearFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกปีงบประมาณ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทุกปี</SelectItem>
+                    {getAvailableYears().map((year) => (
+                      <SelectItem key={year} value={year}>
+                        ปีงบประมาณ {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Status Filter */}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกสถานะ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทุกสถานะ</SelectItem>
+                    <SelectItem value="normal">ใช้งานปกติ</SelectItem>
+                    <SelectItem value="maintenance">บำรุงรักษา</SelectItem>
+                    <SelectItem value="damaged">ชำรุด</SelectItem>
+                    <SelectItem value="disposed">จำหน่ายแล้ว</SelectItem>
+                    <SelectItem value="borrowed">เบิกแล้ว</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filter Actions */}
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  แสดงผล {filteredEquipment.length} จาก {allEquipment.length} รายการ
+                </div>
+                <Button variant="outline" onClick={clearFilters}>
+                  ล้างตัวกรอง
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Filtered Stats Cards */}
+        {(categoryFilter !== "all" || statusFilter !== "all" || yearFilter !== "all" || departmentFilter !== "all" || searchTerm) && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <Monitor className="w-6 h-6 text-primary" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">ทั้งหมด</p>
+                    <p className="text-xl font-bold">{filteredStats.total}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">ใช้งานปกติ</p>
+                    <p className="text-xl font-bold">{filteredStats.normal}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">บำรุงรักษา</p>
+                    <p className="text-xl font-bold">{filteredStats.maintenance}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">ชำรุด</p>
+                    <p className="text-xl font-bold">{filteredStats.damaged}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <Package className="w-6 h-6 text-gray-500" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">จำหน่ายแล้ว</p>
+                    <p className="text-xl font-bold">{filteredStats.disposed}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <Users className="w-6 h-6 text-blue-500" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">เบิกแล้ว</p>
+                    <p className="text-xl font-bold">{filteredStats.borrowed}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Basic Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <EquipmentTypeChart />
-          <EquipmentDepartmentChart />
+          <EquipmentTypeChart equipment={filteredEquipment} /> {/* กราฟประเภทครุภัณฑ์ */}
+          <EquipmentDepartmentChart equipment={filteredEquipment} /> {/* กราฟแผนก */}
         </div>
+
+        {/* Advanced Charts Toggle */}
+        <div className="flex items-center justify-center">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowAdvancedCharts(!showAdvancedCharts)}
+            className="gap-2"
+          >
+            {showAdvancedCharts ? <PieChart className="w-4 h-4" /> : <BarChart3 className="w-4 h-4" />}
+            {showAdvancedCharts ? 'ซ่อน' : 'แสดง'} กราฟเพิ่มเติม
+          </Button>
+        </div>
+
+        {/* Advanced Charts Section */}
+        {showAdvancedCharts && filteredEquipment.length > 0 && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">
+                สถิติครุภัณฑ์เพิ่มเติม
+                                 {(categoryFilter !== "all" || statusFilter !== "all" || yearFilter !== "all" || departmentFilter !== "all" || searchTerm) && (
+                   <span className="text-sm font-normal text-muted-foreground ml-2">
+                     (แสดงผลตามตัวกรองที่เลือก)
+                   </span>
+                 )}
+              </h2>
+            </div>
+            
+            {/* Advanced Charts Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <CategoryChart equipment={filteredEquipment} />
+              <BrandChart equipment={filteredEquipment} />
+              <CPUChart equipment={filteredEquipment} />
+              <RAMChart equipment={filteredEquipment} />
+              <OSChart equipment={filteredEquipment} />
+              <OfficeChart equipment={filteredEquipment} />
+              <PurchaseYearChart equipment={filteredEquipment} />
+            </div>
+          </div>
+        )}
+
+        {/* No Data Message for Advanced Charts */}
+        {showAdvancedCharts && filteredEquipment.length === 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไข</h3>
+                <p className="text-muted-foreground mb-4">
+                  ไม่มีครุภัณฑ์ที่ตรงกับเงื่อนไขการกรองที่เลือก
+                </p>
+                <Button onClick={clearFilters}>
+                  ล้างตัวกรอง
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Activity Section */}
         <RecentActivity />
