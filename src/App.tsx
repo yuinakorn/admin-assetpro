@@ -39,6 +39,7 @@ import OSEdit from "./pages/OSEdit";
 import OfficeList from "./pages/OfficeList";
 import OfficeAdd from "./pages/OfficeAdd";
 import OfficeEdit from "./pages/OfficeEdit";
+import QRScanner from "./pages/QRScanner";
 
 const queryClient = new QueryClient();
 
@@ -234,6 +235,12 @@ const App = () => (
               <Route path="/properties/office/edit/:id" element={
                 <ProtectedRoute requiredRole="admin">
                   <OfficeEdit />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/qr-scanner" element={
+                <ProtectedRoute>
+                  <QRScanner />
                 </ProtectedRoute>
               } />
               

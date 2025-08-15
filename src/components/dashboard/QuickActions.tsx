@@ -16,7 +16,7 @@ const quickActions = [
     description: "สแกนรหัส QR เพื่อดูข้อมูลครุภัณฑ์",
     icon: QrCode,
     color: "bg-info hover:bg-info/90",
-    route: "/scan",
+    route: "/qr-scanner",
   },
   {
     title: "บันทึกยืม-คืน",

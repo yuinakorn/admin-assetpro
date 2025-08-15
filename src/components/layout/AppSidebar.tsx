@@ -10,7 +10,8 @@ import {
   LogOut,
   User,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  QrCode
 } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -163,6 +164,12 @@ export function AppSidebar() {
       icon: FileText,
       url: "/history",
       show: permissions.canViewActivities
+    },
+    {
+      label: "สแกน QR",
+      icon: QrCode,
+      url: "/qr-scanner",
+      show: true // Assuming all users can see this for now
     }
   ]
 
