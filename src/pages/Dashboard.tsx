@@ -299,48 +299,6 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ผู้ใช้งาน</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total_users}</div>
-              <p className="text-xs text-muted-foreground">
-                ผู้ใช้งานในระบบ
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">แผนก</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total_departments}</div>
-              <p className="text-xs text-muted-foreground">
-                แผนกในองค์กร
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ประเภทครุภัณฑ์</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total_equipment_types}</div>
-              <p className="text-xs text-muted-foreground">
-                ประเภทครุภัณฑ์ที่มีอยู่
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Filters Section */}
         <Card>
           <CardHeader>
