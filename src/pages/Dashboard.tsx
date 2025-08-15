@@ -674,7 +674,7 @@ export default function Dashboard() {
                           item.status === 'disposed' ? 'outline' :
                           'secondary'
                         }>
-                          {item.status === 'normal' ? 'ใช้งานปกติ' :
+                          {item.status === 'normal' ? 'ปกติ' :
                            item.status === 'maintenance' ? 'ซ่อมบำรุง' :
                            item.status === 'damaged' ? 'ชำรุด' :
                            item.status === 'disposed' ? 'จำหน่ายแล้ว' :
