@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   Monitor, 
@@ -20,7 +22,7 @@ import {
   TrendingUp
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { DashboardService, DashboardStats } from "@/services/dashboardService"
 import { EquipmentService, EquipmentWithDetails } from "@/services/equipmentService"
 import { EquipmentTypeChart, EquipmentDepartmentChart } from "@/components/dashboard/EquipmentChart"
@@ -63,17 +65,12 @@ export default function Dashboard() {
   const [yearFilter, setYearFilter] = useState<string>("all")
   const [departmentFilter, setDepartmentFilter] = useState<string>("all")
   const [showAdvancedCharts, setShowAdvancedCharts] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   useEffect(() => {
     loadDashboardData()
   }, [])
-
-  // Apply filters when any filter changes
-  useEffect(() => {
-    if (allEquipment.length > 0) {
-      applyFilters()
-    }
-  }, [searchTerm, statusFilter, categoryFilter, yearFilter, departmentFilter, allEquipment])
 
   const loadDashboardData = async () => {
     try {
@@ -93,49 +90,6 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
-
-  // Apply filters
-  const applyFilters = () => {
-    let filtered = allEquipment
-
-    // Apply search filter
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.equipment_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.current_employee_name && item.current_employee_name.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-    }
-
-    // Apply status filter
-    if (statusFilter && statusFilter !== "all") {
-      filtered = filtered.filter(item => item.status === statusFilter)
-    }
-
-    // Apply category filter
-    if (categoryFilter && categoryFilter !== "all") {
-      filtered = filtered.filter(item => item.category_id === categoryFilter)
-    }
-
-    // Apply year filter
-    if (yearFilter && yearFilter !== "all") {
-      filtered = filtered.filter(item => {
-        if (!item.purchase_date) return false
-        const itemYear = new Date(item.purchase_date).getFullYear().toString()
-        return itemYear === yearFilter
-      })
-    }
-
-    // Apply department filter
-    if (departmentFilter && departmentFilter !== "all") {
-      filtered = filtered.filter(item => item.department_id === departmentFilter)
-    }
-
-    setFilteredEquipment(filtered)
   }
 
   // Clear all filters
@@ -194,6 +148,141 @@ export default function Dashboard() {
     })
     return Array.from(departments.entries()).map(([id, name]) => ({ id, name }))
   }
+
+  // Pagination functions
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const renderPaginationItems = () => {
+    const totalPages = Math.ceil(filteredEquipment.length / itemsPerPage)
+    const items = []
+    const maxVisiblePages = 5
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1)
+    }
+
+    // Previous button
+    items.push(
+      <PaginationItem key="prev">
+        <PaginationPrevious 
+          onClick={() => handlePageChange(currentPage - 1)}
+          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+        />
+      </PaginationItem>
+    )
+
+    // First page
+    if (startPage > 1) {
+      items.push(
+        <PaginationItem key="first">
+          <PaginationLink onClick={() => handlePageChange(1)}>1</PaginationLink>
+        </PaginationItem>
+      )
+      if (startPage > 2) {
+        items.push(
+          <PaginationItem key="ellipsis1">
+            <PaginationEllipsis />
+          </PaginationItem>
+        )
+      }
+    }
+
+    // Visible pages
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink 
+            onClick={() => handlePageChange(i)}
+            isActive={currentPage === i}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      )
+    }
+
+    // Last page
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        items.push(
+          <PaginationItem key="ellipsis2">
+            <PaginationEllipsis />
+          </PaginationItem>
+        )
+      }
+      items.push(
+        <PaginationItem key="last">
+          <PaginationLink onClick={() => handlePageChange(totalPages)}>{totalPages}</PaginationLink>
+        </PaginationItem>
+      )
+    }
+
+    // Next button
+    items.push(
+      <PaginationItem key="next">
+        <PaginationNext 
+          onClick={() => handlePageChange(currentPage + 1)}
+          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+        />
+      </PaginationItem>
+    )
+
+    return items
+  }
+
+  // Apply filters
+  const applyFilters = useCallback(() => {
+    let filtered = allEquipment
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.equipment_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.current_employee_name && item.current_employee_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    }
+
+    // Apply status filter
+    if (statusFilter && statusFilter !== "all") {
+      filtered = filtered.filter(item => item.status === statusFilter)
+    }
+
+    // Apply category filter
+    if (categoryFilter && categoryFilter !== "all") {
+      filtered = filtered.filter(item => item.category_id === categoryFilter)
+    }
+
+    // Apply year filter
+    if (yearFilter && yearFilter !== "all") {
+      filtered = filtered.filter(item => {
+        if (!item.purchase_date) return false
+        const itemYear = new Date(item.purchase_date).getFullYear().toString()
+        return itemYear === yearFilter
+      })
+    }
+
+    // Apply department filter
+    if (departmentFilter && departmentFilter !== "all") {
+      filtered = filtered.filter(item => item.department_id === departmentFilter)
+    }
+
+    setFilteredEquipment(filtered)
+  }, [searchTerm, statusFilter, categoryFilter, yearFilter, departmentFilter, allEquipment])
+
+  // Apply filters when any filter changes
+  useEffect(() => {
+    if (allEquipment.length > 0) {
+      applyFilters()
+    }
+  }, [searchTerm, statusFilter, categoryFilter, yearFilter, departmentFilter, allEquipment, applyFilters])
 
   // Calculate filtered stats
   const filteredStats = {
@@ -485,7 +574,6 @@ export default function Dashboard() {
         {/* Advanced Charts Toggle */}
         <div className="flex items-center justify-center">
           <Button 
-            variant="outline" 
             onClick={() => setShowAdvancedCharts(!showAdvancedCharts)}
             className="gap-2"
           >
@@ -542,6 +630,85 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Equipment Table Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>รายการครุภัณฑ์ ({filteredEquipment.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>รหัสครุภัณฑ์</TableHead>
+                    <TableHead>ชื่อครุภัณฑ์</TableHead>
+                    <TableHead>ประเภท</TableHead>
+                    <TableHead>แผนก</TableHead>
+                    <TableHead>สถานะ</TableHead>
+                    <TableHead>เจ้าของเครื่อง</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEquipment.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.equipment_code}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Monitor className="w-4 h-4 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{item.name}</p>
+                            {item.asset_number && (
+                              <p className="text-xs text-muted-foreground">{item.asset_number}</p>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{item.category_name || '-'}</TableCell>
+                      <TableCell>{item.department_name || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          item.status === 'normal' ? 'default' :
+                          item.status === 'maintenance' ? 'secondary' :
+                          item.status === 'damaged' ? 'destructive' :
+                          item.status === 'disposed' ? 'outline' :
+                          'secondary'
+                        }>
+                          {item.status === 'normal' ? 'ใช้งานปกติ' :
+                           item.status === 'maintenance' ? 'ซ่อมบำรุง' :
+                           item.status === 'damaged' ? 'ชำรุด' :
+                           item.status === 'disposed' ? 'จำหน่ายแล้ว' :
+                           'เบิกแล้ว'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{item.current_employee_name || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {filteredEquipment.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไขการค้นหา
+              </div>
+            )}
+
+            {/* Pagination */}
+            {filteredEquipment.length > itemsPerPage && (
+              <div className="flex items-center justify-between mt-6">
+                <div className="text-sm text-muted-foreground">
+                  แสดง {(currentPage - 1) * itemsPerPage + 1} ถึง {Math.min(currentPage * itemsPerPage, filteredEquipment.length)} จาก {filteredEquipment.length} รายการ
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    {renderPaginationItems()}
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Recent Activity Section */}
         <RecentActivity />
