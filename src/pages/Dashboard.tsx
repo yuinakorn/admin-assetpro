@@ -558,6 +558,10 @@ export default function Dashboard() {
               <RAMChart equipment={filteredEquipment} />
               <OSChart equipment={filteredEquipment} />
               <OfficeChart equipment={filteredEquipment} />
+            </div>
+            
+            {/* Purchase Year Chart - Full Width */}
+            <div className="mt-6">
               <PurchaseYearChart equipment={filteredEquipment} />
             </div>
           </div>

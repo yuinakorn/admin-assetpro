@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LabelList } from "recharts"
 import { useEffect, useState } from "react"
 import { DashboardService, EquipmentStatusData, MonthlyTrendData, EquipmentTypeData, EquipmentDepartmentData } from "@/services/dashboardService"
 import { EquipmentWithDetails } from "@/services/equipmentService"
+import { ChartFullscreen } from "@/components/ui/chart-fullscreen"
 
 export function EquipmentStatusChart() {
   const [statusData, setStatusData] = useState<EquipmentStatusData[]>([])
@@ -142,7 +143,7 @@ export function EquipmentTypeChart({ equipment }: { equipment?: EquipmentWithDet
               if (!categoryCounts[categoryKey]) {
                 categoryCounts[categoryKey] = {
                   name: item.category_name,
-                  code: item.category_code || item.category_name,
+                  code: item.category_name, // Use category_name as code if category_code is not available
                   count: 0
                 }
               }
@@ -206,55 +207,64 @@ export function EquipmentTypeChart({ equipment }: { equipment?: EquipmentWithDet
     )
   }
 
+  const renderChart = (height: number = 300) => (
+    <>
+      <ResponsiveContainer width="100%" height={height}>
+        <PieChart>
+          <Pie
+            data={typeData}
+            cx="50%"
+            cy="50%"
+            innerRadius={height > 300 ? 100 : 60}
+            outerRadius={height > 300 ? 180 : 100}
+            paddingAngle={2}
+            dataKey="count"
+            label={({ type_label, count, percent }) => 
+              `${type_label}: ${count} (${(percent * 100).toFixed(0)}%)`
+            }
+            labelLine={false}
+          >
+            {typeData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip 
+            formatter={(value, name) => [value, 'จำนวน']}
+            labelFormatter={(label) => {
+              const entry = typeData.find(item => item.type_label === label)
+              return entry ? entry.type_label : label
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      
+      {/* Legend */}
+      <div className={`grid ${height > 300 ? 'grid-cols-3' : 'grid-cols-2'} gap-2 mt-4`}>
+        {typeData.map((item, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: item.color }}
+            />
+            <span className="text-sm text-muted-foreground">
+              {item.type_label} ({item.count})
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <CardTitle className="text-lg font-semibold">จำนวนครุภัณฑ์ตามประเภท</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={typeData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={100}
-              paddingAngle={2}
-              dataKey="count"
-              label={({ type_label, count, percent }) => 
-                `${type_label}: ${count} (${(percent * 100).toFixed(0)}%)`
-              }
-              labelLine={false}
-            >
-              {typeData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip 
-              formatter={(value, name) => [value, 'จำนวน']}
-              labelFormatter={(label) => {
-                const entry = typeData.find(item => item.type_label === label)
-                return entry ? entry.type_label : label
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        
-        {/* Legend */}
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          {typeData.map((item, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-sm text-muted-foreground">
-                {item.type_label} ({item.count})
-              </span>
-            </div>
-          ))}
-        </div>
+        {renderChart()}
+        <ChartFullscreen title="จำนวนครุภัณฑ์ตามประเภท">
+          {renderChart(600)}
+        </ChartFullscreen>
       </CardContent>
     </Card>
   )
@@ -343,37 +353,51 @@ export function EquipmentDepartmentChart({ equipment }: { equipment?: EquipmentW
     )
   }
 
+  const renderChart = (height: number = 300) => (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={departmentData} margin={{ top: 20, right: 30, left: 20, bottom: height > 300 ? 10 : 5 }}>
+        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+        <XAxis 
+          dataKey="department_code" 
+          tick={{ fontSize: height > 300 ? 14 : 12 }}
+          angle={-45}
+          textAnchor="end"
+          height={80}
+        />
+        <YAxis tick={{ fontSize: height > 300 ? 14 : 12 }} />
+        <Tooltip 
+          formatter={(value) => [value, 'จำนวนครุภัณฑ์']}
+          labelFormatter={(label) => {
+            const dept = departmentData.find(item => item.department_code === label)
+            return dept ? `${dept.department} (${dept.department_code})` : label
+          }}
+        />
+        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+          {departmentData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+          <LabelList 
+            dataKey="count" 
+            position="top" 
+            fill="#374151" 
+            fontSize={height > 300 ? 13 : 11}
+            formatter={(value) => `${value}`}
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <CardTitle className="text-lg font-semibold">จำนวนครุภัณฑ์ตามแผนก</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={departmentData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis 
-              dataKey="department_code" 
-              tick={{ fontSize: 12 }}
-              angle={-45}
-              textAnchor="end"
-              height={80}
-            />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip 
-              formatter={(value) => [value, 'จำนวนครุภัณฑ์']}
-              labelFormatter={(label) => {
-                const dept = departmentData.find(item => item.department_code === label)
-                return dept ? `${dept.department} (${dept.department_code})` : label
-              }}
-            />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-              {departmentData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {renderChart()}
+        <ChartFullscreen title="จำนวนครุภัณฑ์ตามแผนก">
+          {renderChart(600)}
+        </ChartFullscreen>
       </CardContent>
     </Card>
   )
