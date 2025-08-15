@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { Plus, Search, Edit, Trash2, Eye, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronRight } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, Monitor, Download } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { EquipmentService } from "@/services/equipmentService"
 import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useAuth } from "@/contexts/AuthContext"
+import * as XLSX from 'xlsx'
 
 type SortField = 'equipment_code' | 'name' | 'category_name' | 'department_name' | 'status' | 'current_user_name'
 type SortDirection = 'asc' | 'desc'
@@ -32,6 +33,8 @@ interface Equipment {
   current_user_name?: string
   current_employee_name?: string
   serial_number?: string
+  asset_number?: string
+  purchase_date?: string
 }
 
 export default function EquipmentList() {
@@ -127,7 +130,8 @@ export default function EquipmentList() {
   const filteredEquipment = equipment.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.equipment_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (item.serial_number && item.serial_number.toLowerCase().includes(searchTerm.toLowerCase()))
+                         (item.serial_number && item.serial_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (item.asset_number && item.asset_number.toLowerCase().includes(searchTerm.toLowerCase()))
     
     const matchesStatus = filterStatus === "all" || item.status === filterStatus
     
@@ -152,6 +156,77 @@ export default function EquipmentList() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
+  }
+
+  const handleExportToExcel = () => {
+    try {
+      // Prepare data for export
+      const exportData = equipment.map(item => ({
+        'รหัสครุภัณฑ์': item.equipment_code,
+        'ชื่อครุภัณฑ์': item.name,
+        'เลขครุภัณฑ์': item.asset_number || '-',
+        'ประเภท': item.category_name || '-',
+        'แผนก': item.department_name || '-',
+        'สถานะ': getStatusText(item.status),
+        'เจ้าของเครื่อง': item.current_employee_name || '-',
+        'หมายเลขซีเรียล': item.serial_number || '-',
+        'วันที่ซื้อ': item.purchase_date || '-',
+      }))
+
+      // Create workbook and worksheet
+      const workbook = XLSX.utils.book_new()
+      const worksheet = XLSX.utils.json_to_sheet(exportData)
+
+      // Auto-size columns
+      const columnWidths = [
+        { wch: 15 }, // รหัสครุภัณฑ์
+        { wch: 30 }, // ชื่อครุภัณฑ์
+        { wch: 20 }, // เลขครุภัณฑ์
+        { wch: 20 }, // ประเภท
+        { wch: 20 }, // แผนก
+        { wch: 15 }, // สถานะ
+        { wch: 25 }, // เจ้าของเครื่อง
+        { wch: 20 }, // หมายเลขซีเรียล
+        { wch: 15 }  // วันที่ซื้อ
+      ]
+      worksheet['!cols'] = columnWidths
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'รายการครุภัณฑ์')
+
+      // Generate filename with current date and time
+      const now = new Date()
+      const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_')
+      const filename = `equipment_${dateStr}.xlsx`
+
+      // Save file
+      XLSX.writeFile(workbook, filename)
+
+      toast({
+        title: "ส่งออกสำเร็จ",
+        description: `ไฟล์ ${filename} ถูกส่งออกเรียบร้อยแล้ว`,
+      })
+    } catch (error) {
+      console.error('Error exporting to Excel:', error)
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถส่งออกไฟล์ Excel ได้",
+        variant: "destructive"
+      })
+    }
+  }
+
+
+
+  const getStatusText = (status: string) => {
+    const statusConfig = {
+      normal: "ใช้งานปกติ",
+      maintenance: "ซ่อมบำรุง",
+      damaged: "ชำรุด",
+      disposed: "จำหน่ายแล้ว",
+      borrowed: "เบิกแล้ว"
+    }
+    return statusConfig[status as keyof typeof statusConfig] || status
   }
 
   const renderPaginationItems = () => {
@@ -240,7 +315,15 @@ export default function EquipmentList() {
         <div className="space-y-3">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg truncate">{item.name}</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <Monitor className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <h3 className="font-semibold text-lg truncate">{item.name}</h3>
+                  {item.asset_number && (
+                    <p className="text-xs text-muted-foreground">{item.asset_number}</p>
+                  )}
+                </div>
+              </div>
               <p className="text-sm text-muted-foreground">{item.equipment_code}</p>
             </div>
             <div className="flex items-center gap-1 ml-2">
@@ -340,12 +423,18 @@ export default function EquipmentList() {
               จัดการครุภัณฑ์คอมพิวเตอร์ทั้งหมดในระบบ
             </p>
           </div>
-          {permissions.canAddEquipment && (
-            <Button onClick={() => navigate("/equipment/add")} className="w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              เพิ่มครุภัณฑ์
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button onClick={handleExportToExcel} variant="outline" className="w-full sm:w-auto">
+              <Download className="w-4 h-4 mr-2" />
+              Export Excel
             </Button>
-          )}
+            {permissions.canAddEquipment && (
+              <Button onClick={() => navigate("/equipment/add")} className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                เพิ่มครุภัณฑ์
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -492,6 +581,7 @@ export default function EquipmentList() {
                           {getSortIcon('current_user_name')}
                         </Button>
                       </TableHead>
+
                       <TableHead>การดำเนินการ</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -499,7 +589,17 @@ export default function EquipmentList() {
                     {currentEquipment.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.equipment_code}</TableCell>
-                        <TableCell>{item.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Monitor className="w-4 h-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">{item.name}</p>
+                              {item.asset_number && (
+                                <p className="text-xs text-muted-foreground">{item.asset_number}</p>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
                         <TableCell>{item.category_name || '-'}</TableCell>
                         <TableCell>{item.department_name || '-'}</TableCell>
                         <TableCell>{getStatusBadge(item.status)}</TableCell>
