@@ -205,7 +205,7 @@ export default function Login() {
 
               {/* Footer */}
               <div className="text-center mt-8 text-sm text-gray-500">
-                <p>© 2024 ระบบจัดการครุภัณฑ์. สงวนลิขสิทธิ์.</p>
+                <p>© 2025 ระบบจัดการครุภัณฑ์. สงวนลิขสิทธิ์.</p>
               </div>
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function Login() {
                   <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm border border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-200">
                     <Users className="w-8 h-8 text-purple-600" />
                   </div>
-                  <div className="text-3xl font-bold text-gray-800 mb-1">1+</div>
+                  <div className="text-3xl font-bold text-gray-800 mb-1">10+</div>
                   <div className="text-gray-600 text-sm font-medium">ผู้ใช้งาน</div>
                 </div>
                 <div className="text-center group">
