@@ -277,7 +277,7 @@ export default function Login() {
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm border border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-200">
                     <Monitor className="w-8 h-8 text-blue-600" />
                   </div>
-                  <div className="text-3xl font-bold text-gray-800 mb-1">100+</div>
+                  <div className="text-3xl font-bold text-gray-800 mb-1">300+</div>
                   <div className="text-gray-600 text-sm font-medium">ครุภัณฑ์</div>
                 </div>
                 <div className="text-center group">
