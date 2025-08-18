@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur"/>
+      <feOffset dy="1" result="offset"/>
+      <feMerge>
+        <feMergeNode in="offset"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#g)"/>
+  <!-- Stylized A mark -->
+  <g fill="#ffffff" filter="url(#softShadow)">
+    <!-- Outer triangle -->
+    <polygon points="32,10 54,54 10,54"/>
+    <!-- Crossbar -->
+    <rect x="20" y="35" width="24" height="6" rx="3"/>
+  </g>
+  <!-- Subtle shine -->
+  <path d="M10 18 C22 10, 42 10, 54 18" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="3" stroke-linecap="round"/>
+</svg>
+
